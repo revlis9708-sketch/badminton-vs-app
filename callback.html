@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>認証中...</title>
+<style>
+body{font-family:-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#fafafa;flex-direction:column;gap:16px}
+.logo{font-size:48px}
+.msg{font-size:15px;color:#888}
+</style>
+</head>
+<body>
+<div class="logo">🏸</div>
+<div class="msg">LINE認証中...</div>
+<script>
+// Get code and state from URL
+const params=new URLSearchParams(window.location.search);
+const code=params.get('code');
+const state=params.get('state');
+const error=params.get('error');
+
+if(error){
+  // User denied
+  window.location.href='./';
+} else if(code&&state){
+  // Save to localStorage so main page can pick it up
+  localStorage.setItem('line_callback_code',code);
+  localStorage.setItem('line_callback_state',state);
+  localStorage.setItem('line_callback_ts',Date.now().toString());
+  // Redirect to main app
+  window.location.href='./';
+} else {
+  window.location.href='./';
+}
+</script>
+</body>
+</html>
