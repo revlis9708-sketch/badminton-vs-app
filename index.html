@@ -1,0 +1,2526 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🏸 バドミントン</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192-v2.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="バドミントン">
+<meta name="theme-color" content="#F26A1B">
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --black:#0f0f0f;--white:#fafafa;
+  --g2:#2e2e2e;--g3:#484848;--g4:#8a8a8a;--g5:#c8c8c8;--g6:#e8e8e8;--g7:#f4f4f4;--g8:#f9f9f9;
+  --ora:#F26A1B;--ora2:#FFF0E6;--ora3:#d4560f;
+  --f:'DM Sans',-apple-system,'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;
+  --r:10px;
+}
+body{font-family:var(--f);background:var(--white);color:var(--black);font-size:15px;min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.show{display:flex}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--g6);background:var(--white);position:sticky;top:0;z-index:50}
+.topbar-title{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.topbar-sub{font-size:11px;color:var(--g4);margin-top:1px}
+.ibtn{background:none;border:1px solid var(--g5);color:var(--black);border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;font-family:var(--f);font-weight:500;white-space:nowrap}
+.ibtn:active{background:var(--g7)}
+.ibtn.ora{border-color:var(--ora);color:var(--ora)}
+.body{flex:1;overflow-y:auto;padding:13px 13px 88px}
+
+/* TABS */
+.tabs{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--g6);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:50}
+.tbtn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 4px 7px;font-size:10px;color:var(--g4);cursor:pointer;border:none;background:none;font-family:var(--f);font-weight:500}
+.tbtn .ico{font-size:18px;line-height:1}
+.tbtn.on{color:var(--ora);font-weight:700}
+
+/* CARD */
+.card{background:var(--white);border:1px solid var(--g6);border-radius:var(--r);padding:13px;margin-bottom:10px}
+.clabel{font-size:10px;font-weight:700;color:var(--g4);letter-spacing:1px;text-transform:uppercase;margin-bottom:9px}
+
+/* MEMBER GRID */
+.mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.mcell{border:1px solid var(--g6);border-radius:8px;padding:9px 3px;text-align:center;cursor:pointer;font-size:12px;font-weight:500;color:var(--g3);transition:all .12s;user-select:none;background:var(--white);line-height:1.2;word-break:break-all}
+.mcell:active{transform:scale(.92)}
+.mcell.on{background:var(--black);color:var(--white);border-color:var(--black)}
+
+/* BUTTONS */
+.btn{padding:12px 18px;border-radius:10px;border:none;cursor:pointer;font-size:15px;font-weight:700;font-family:var(--f);transition:transform .1s,opacity .1s;user-select:none}
+.btn:active{transform:scale(.96);opacity:.87}
+.btn-black{background:var(--black);color:var(--white)}
+.btn-ora{background:var(--ora);color:var(--white)}
+.btn-outline{background:none;border:1.5px solid var(--g5);color:var(--black)}
+.btn-ghost{background:none;border:none;color:var(--g4);font-size:13px;font-family:var(--f);cursor:pointer;padding:6px 8px}
+.btn-sm{padding:7px 13px;font-size:13px;border-radius:8px}
+.btn-full{width:100%}
+
+/* INPUTS */
+input[type=text],select{border:1px solid var(--g5);border-radius:8px;padding:11px 13px;font-size:15px;font-family:var(--f);background:var(--white);color:var(--black);width:100%;outline:none;-webkit-appearance:none}
+input[type=text]:focus,select:focus{border-color:var(--ora)}
+
+/* NUM SELECTOR */
+.numrow{display:flex;gap:7px;flex-wrap:wrap}
+.nbtn{width:44px;height:44px;border-radius:8px;border:1px solid var(--g5);background:var(--white);font-weight:600;font-size:16px;cursor:pointer;font-family:var(--f);display:flex;align-items:center;justify-content:center;transition:all .1s}
+.nbtn:active{transform:scale(.91)}
+.nbtn.on{background:var(--ora);color:var(--white);border-color:var(--ora)}
+
+/* ═══ COURT COLUMN LAYOUT ═══
+   Each court is a column that grows downward.
+   3 columns fixed.
+*/
+.game-ctrl{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.courts-scroll-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin:0 -13px;padding-left:13px;padding-right:13px;}
+.courts-columns{display:grid;grid-template-columns:repeat(6,minmax(195px,1fr));gap:6px;align-items:start;width:max-content;min-width:100%;}
+
+/* COURT COLUMN */
+.court-col{display:flex;flex-direction:column;gap:6px}
+.court-col-header{
+  background:var(--black);color:var(--white);
+  padding:5px 8px;border-radius:7px;
+  display:flex;align-items:center;justify-content:space-between;
+  font-weight:700;font-size:11px;
+}
+.court-col-header.singles-h{background:#7a1f1f}
+.cbadge{font-size:10px;background:rgba(255,255,255,.2);padding:2px 7px;border-radius:20px;font-weight:500;white-space:nowrap}
+
+.game-card{
+  border:1px solid var(--g6);border-radius:7px;
+  background:var(--white);overflow:hidden;
+  transition:border-color .15s;
+}
+.game-card.active-card{border-color:var(--ora);box-shadow:0 0 0 1px var(--ora2)}
+.game-card.done-card{border-color:var(--g6);opacity:.7}
+.game-card.singles-game{border-left:3px solid #7a1f1f}
+.game-card.singles-game.active-card{border-color:var(--ora);border-left-color:#b83232}
+
+/* NEXT GAME button inside column */
+.next-game-btn{
+  border:1.5px dashed var(--g5);border-radius:7px;
+  padding:7px 4px;text-align:center;
+  font-size:11px;font-weight:700;color:var(--g5);
+  cursor:default;transition:all .15s;user-select:none;
+}
+.next-game-btn.ready{
+  border-color:var(--ora);color:var(--ora);
+  background:var(--ora2);cursor:pointer;
+}
+.next-game-btn.ready:active{transform:scale(.96)}
+
+/* MATCHUP — horizontal: NameBlock | VS | NameBlock */
+.matchup{display:flex;align-items:stretch;border-radius:6px;overflow:hidden;min-height:52px}
+.team-side{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;padding:5px 3px;cursor:pointer;transition:background .12s;user-select:none;min-width:0;
+}
+.team-side:active{opacity:.75}
+.team-side.side-a{background:var(--g7)}
+.team-side.side-b{background:var(--g8);border-left:1px solid var(--g6)}
+.team-side.sel-a{background:var(--ora)}
+.team-side.sel-b{background:var(--ora)}
+.team-side.sel-a .pname,.team-side.sel-a .tlbl{color:rgba(255,255,255,.9)}
+.team-side.sel-b .pname,.team-side.sel-b .tlbl{color:rgba(255,255,255,.9)}
+.tlbl{font-size:8px;font-weight:700;color:var(--g4);letter-spacing:.5px}
+.pname{font-size:14px;font-weight:700;color:var(--black);text-align:center;word-break:break-all;line-height:1.25}
+.pname.empty-slot{color:var(--g5);font-style:italic;font-weight:400;font-size:11px}
+
+/* VS center — horizontal text, tappable for draw */
+.vs-center{
+  display:flex;align-items:center;justify-content:center;
+  width:26px;flex-shrink:0;
+  cursor:pointer;font-size:9px;font-weight:700;color:var(--g5);
+  background:var(--white);
+  border-top:1px solid var(--g6);border-bottom:1px solid var(--g6);
+  transition:background .12s,color .12s;user-select:none;
+}
+.vs-center:active{background:var(--g6)}
+.vs-center.sel-d{background:var(--g3);color:var(--white)}
+
+/* SCORE AREA */
+.score-area{display:flex;align-items:center;justify-content:center;gap:5px;padding:4px 3px 3px}
+.score-block{display:flex;flex-direction:column;align-items:center;gap:1px}
+.score-lbl{font-size:8px;font-weight:700;color:var(--g4);letter-spacing:.5px}
+.score-ctrl{display:flex;align-items:center;border:1px solid var(--g5);border-radius:6px;overflow:hidden}
+.score-btn{background:var(--g7);border:none;cursor:pointer;padding:3px 7px;font-size:13px;font-weight:700;color:var(--g3);font-family:var(--f);line-height:1}
+.score-btn:active{background:var(--g5)}
+.score-val{min-width:24px;text-align:center;font-size:13px;font-weight:700;padding:3px 2px;border-left:1px solid var(--g6);border-right:1px solid var(--g6)}
+.score-val.empty{color:var(--g5)}
+.score-dash{font-size:11px;font-weight:700;color:var(--g5);margin-top:10px}
+
+/* CONFIRM + DONE */
+.conf-btn-wrap{padding:4px}
+.done-badge{text-align:center;padding:5px 4px;font-size:10px;font-weight:600;color:var(--g4);background:var(--g8)}
+.done-badge.win{color:var(--ora)}
+
+/* WAITING */
+.wait-section{border:1px solid var(--g6);border-radius:var(--r);padding:10px 12px;margin-top:8px;background:var(--g8)}
+.wait-label{font-size:10px;font-weight:700;color:var(--g4);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.wait-chips{display:flex;flex-wrap:wrap;gap:5px}
+.wait-chip{background:var(--white);border:1px solid var(--g5);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:500;color:var(--g3)}
+
+/* STATS */
+.stbl{width:100%;border-collapse:collapse;font-size:13px}
+.stbl th{background:var(--g7);font-weight:600;padding:8px 7px;text-align:left;font-size:11px;color:var(--g4)}
+.stbl td{padding:9px 7px;border-bottom:1px solid var(--g6)}
+.stbl tr:last-child td{border-bottom:none}
+.wbar{height:3px;background:var(--g6);border-radius:2px;margin-top:4px}
+.wfill{height:100%;background:var(--ora);border-radius:2px}
+
+/* RANKING */
+.rrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--g6)}
+.rrow:last-child{border-bottom:none}
+.rnum{font-size:20px;font-weight:700;color:var(--g5);min-width:26px}
+.rnum.r1{color:var(--ora)}.rnum.r2{color:var(--g3)}.rnum.r3{color:var(--g4)}
+.rinfo{flex:1}
+.rname{font-weight:600;font-size:14px}
+.rsub{font-size:11px;color:var(--g4);margin-top:1px}
+.rpts{font-size:20px;font-weight:700;color:var(--ora)}
+
+/* PARTNER */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px}
+.pcard{border:1px solid var(--g6);border-radius:8px;padding:9px}
+.pname2{font-weight:600;font-size:12px;margin-bottom:2px}
+
+/* MGMT */
+.mitem{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--g6)}
+.mitem:last-child{border-bottom:none}
+.mname-txt{flex:1;font-weight:500;font-size:14px}
+.mstars{display:flex;gap:2px}
+.mstar{font-size:14px;cursor:pointer;color:var(--g5)}
+.mstar.on{color:var(--ora)}
+.mdel{background:none;border:none;color:var(--g5);font-size:18px;cursor:pointer;padding:3px 4px;line-height:1}
+.mdel:active{color:var(--black)}
+
+/* TOGGLE */
+.togrow{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--g6)}
+.togrow:last-child{border-bottom:none}
+.toglbl{font-size:14px;font-weight:500}
+.togsub{font-size:11px;color:var(--g4);margin-top:2px}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--ora);cursor:pointer;flex-shrink:0}
+
+/* FP */
+.fpitem{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--g6)}
+.fpitem:last-child{border-bottom:none}
+.fptag{font-size:9px;background:var(--ora2);color:var(--ora);padding:2px 7px;border-radius:20px;font-weight:700;border:1px solid var(--ora);white-space:nowrap}
+
+/* NOTICE */
+.notice{padding:9px 12px;border-radius:8px;font-size:12px;margin-bottom:8px;border:1px solid var(--g5);color:var(--g3)}
+
+/* TOAST */
+.toast{
+  position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-10px);
+  background:var(--black);color:var(--white);
+  padding:10px 20px;border-radius:24px;
+  font-size:13px;font-weight:600;
+  opacity:0;transition:opacity .2s,transform .2s;
+  z-index:300;white-space:nowrap;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.show{display:flex}
+.modal{background:var(--white);border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:82vh;overflow-y:auto}
+.mtitle{font-size:16px;font-weight:700;margin-bottom:12px}
+.mclose{float:right;cursor:pointer;font-size:22px;color:var(--g4);line-height:1}
+
+/* MIC */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* SETUP */
+.setup-body{flex:1;overflow-y:auto;padding:16px 14px 110px}
+.slabel{font-size:10px;font-weight:700;color:var(--g4);letter-spacing:1px;text-transform:uppercase;margin-bottom:9px}
+.startbar{position:fixed;bottom:0;left:0;right:0;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:var(--white);border-top:1px solid var(--g6)}
+
+/* UTILS */
+.row{display:flex;align-items:center;gap:8px}
+.btwn{display:flex;align-items:center;justify-content:space-between}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}
+.mt4{margin-top:4px}.mt8{margin-top:8px}
+.sm{font-size:12px;color:var(--g4)}
+.sec{margin-bottom:22px}
+
+/* AUTH SCREENS */
+.auth-screen{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--white)}
+.auth-screen.show{display:flex}
+.auth-card{width:100%;max-width:380px;background:var(--white);border:1px solid var(--g6);border-radius:16px;padding:28px 24px;box-shadow:0 4px 24px rgba(0,0,0,.07)}
+.auth-logo{text-align:center;font-size:40px;margin-bottom:8px}
+.auth-title{text-align:center;font-size:20px;font-weight:700;margin-bottom:4px}
+.auth-sub{text-align:center;font-size:13px;color:var(--g4);margin-bottom:24px;line-height:1.6}
+.auth-label{font-size:12px;font-weight:700;color:var(--g4);letter-spacing:.5px;margin-bottom:6px;display:block}
+.auth-input{border:1.5px solid var(--g5);border-radius:10px;padding:12px 14px;font-size:15px;font-family:var(--f);background:var(--white);color:var(--black);width:100%;outline:none;margin-bottom:14px;-webkit-appearance:none;box-sizing:border-box}
+.auth-input:focus{border-color:var(--ora)}
+.auth-err{font-size:12px;color:#c0392b;text-align:center;margin-bottom:10px;min-height:18px;font-weight:600}
+.auth-link{text-align:center;font-size:13px;color:var(--g4);margin-top:16px;cursor:pointer}
+.auth-link span{color:var(--ora);font-weight:600}
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<!-- ══ AUTH: LOADING ══ -->
+<div class="auth-screen show" id="sc-auth-loading">
+  <div class="auth-logo">🏸</div>
+  <div style="font-size:14px;color:var(--g4);margin-top:12px">読み込み中...</div>
+</div>
+
+<!-- ══ AUTH: LOGIN ══ -->
+<div class="auth-screen" id="sc-auth-login">
+  <div class="auth-card">
+    <div class="auth-logo">🏸</div>
+    <div class="auth-title">バドミントン対戦管理</div>
+    <div class="auth-sub">LINEアカウントでログインしてください</div>
+    <div class="auth-err" id="login-err"></div>
+    <button onclick="lineLogin()" style="width:100%;padding:14px;border-radius:10px;border:none;background:#06C755;color:#fff;font-size:15px;font-weight:700;font-family:var(--f);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2C6.03 2 2 5.58 2 10c0 3.54 2.56 6.58 6.24 7.77.46.08.62-.2.62-.44v-1.55c-2.54.55-3.08-1.09-3.08-1.09-.42-1.06-1.02-1.34-1.02-1.34-.83-.57.06-.56.06-.56.92.07 1.4.94 1.4.94.82 1.4 2.14.99 2.66.76.08-.59.32-.99.58-1.22-2.03-.23-4.16-1.01-4.16-4.51 0-1 .36-1.81.94-2.45-.09-.23-.41-1.16.09-2.41 0 0 .77-.25 2.52.94A8.77 8.77 0 0111 6.84c.78 0 1.56.1 2.29.3 1.75-1.19 2.52-.94 2.52-.94.5 1.25.18 2.18.09 2.41.58.64.94 1.45.94 2.45 0 3.51-2.14 4.28-4.18 4.5.33.28.62.84.62 1.69v2.51c0 .24.16.53.63.44C17.45 16.57 20 13.53 20 10c0-4.42-4.03-8-9-8z" fill="white"/></svg>
+      LINEでログイン / 新規登録
+    </button>
+    <div class="auth-sub" style="margin-top:12px;margin-bottom:0;font-size:12px">初めての方もLINEでログインして登録できます</div>
+  </div>
+</div>
+
+<!-- ══ AUTH: REGISTER ══ -->
+<div class="auth-screen" id="sc-auth-register">
+  <div class="auth-card">
+    <div class="auth-logo">🏸</div>
+    <div class="auth-title">初回登録</div>
+    <div class="auth-sub">購入時の情報を入力してください<br>照合後にアカウントを作成します</div>
+    <div style="background:var(--g7);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px;color:var(--g3)">
+      LINEアカウント：<strong id="reg-line-name">—</strong>
+    </div>
+    <label class="auth-label">お名前（購入時と同じ）</label>
+    <input class="auth-input" type="text" id="reg-name" placeholder="山田 太郎">
+    <label class="auth-label">電話番号（購入時と同じ・ハイフンなし）</label>
+    <input class="auth-input" type="tel" id="reg-phone" placeholder="09012345678">
+    <div class="auth-err" id="reg-err"></div>
+    <button class="btn btn-ora btn-full" onclick="authRegister()">登録する</button>
+    <div class="auth-link" onclick="showAuthScreen('sc-auth-login')">
+      戻る
+    </div>
+  </div>
+</div>
+
+<!-- ══ SETUP ══ -->
+<div class="screen" id="sc-setup">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">バドミントン対戦管理アプリ🏸</div>
+    </div>
+    <button class="ibtn" onclick="goMgmt('setup')">メンバー管理</button>
+  </div>
+  <div class="setup-body">
+    <div class="notice" style="border-color:var(--g6);color:var(--g4);margin-bottom:18px">
+      コート数と参加メンバーを選んでゲームを開始してください！
+    </div>
+    <div class="sec">
+      <div class="slabel">コート数</div>
+      <div class="numrow" id="court-sel"></div>
+    </div>
+    <div class="sec">
+      <div class="btwn mb8">
+        <div class="slabel" style="margin:0">参加メンバー</div>
+        <div style="display:flex;gap:4px">
+          <button class="btn-ghost" onclick="clearAll()">全解除</button>
+          <button class="btn-ghost" onclick="selAll()" style="color:var(--black);font-weight:700">全選択</button>
+        </div>
+      </div>
+      <div class="mgrid" id="setup-grid"></div>
+    </div>
+  </div>
+  <div class="startbar">
+    <div class="btwn mb8"><span class="sm" id="setup-sum"></span></div>
+    <button class="btn btn-ora btn-full" onclick="startGame()">ゲーム開始</button>
+  </div>
+</div>
+
+<!-- ══ MEMBER MGMT ══ -->
+<div class="screen" id="sc-mgmt">
+  <div class="topbar">
+    <button class="ibtn" onclick="goMgmtBack()">← 戻る</button>
+    <div class="topbar-title">メンバー管理</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="body">
+    <div class="card">
+      <div class="clabel">新規追加</div>
+      <div class="row mb8">
+        <input type="text" id="add-inp" placeholder="名前を入力... (Enterで追加)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addMember();}">
+        
+      </div>
+      <button class="btn btn-ora btn-full" onclick="addMember()">追加</button>
+      <div class="sm mt8">パワーレベルはゲーム画面には表示されません</div>
+    </div>
+    <div class="card">
+      <div class="clabel">メンバー一覧 (<span id="member-count">0</span>人)</div>
+      <div id="mgmt-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div class="screen" id="sc-main">
+  <div class="topbar">
+    <button class="ibtn" id="reset-btn" onclick="resetAll()" style="display:none;color:var(--ora);border-color:var(--ora)">リセット</button>
+    <div>
+      <div class="topbar-title" id="main-title">ゲーム</div>
+      <div class="topbar-sub" id="main-sub"></div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="ibtn ora" onclick="openModal()">結果</button>
+      <button class="ibtn" onclick="authLogout()" style="font-size:11px">ログアウト</button>
+    </div>
+  </div>
+  <div class="body" id="tab-body"></div>
+  <div class="tabs">
+    <button class="tbtn on" id="tb-game"     onclick="goTab('game')">    <span class="ico">🏸</span><span>ゲーム</span></button>
+    <button class="tbtn"    id="tb-members"  onclick="goTab('members')"> <span class="ico">👥</span><span>メンバー</span></button>
+    <button class="tbtn"    id="tb-stats"    onclick="goTab('stats')">   <span class="ico">📈</span><span>戦績</span></button>
+    <button class="tbtn"    id="tb-settings" onclick="goTab('settings')"><span class="ico">⚙️</span><span>設定</span></button>
+  </div>
+</div>
+
+<!-- ══ MODAL ══ -->
+<div class="overlay" id="overlay" onclick="overlayTap(event)">
+  <div class="modal" id="modal-inner"></div>
+</div>
+
+<script>
+// ═══════════════════════
+//  STATE
+// ═══════════════════════
+let S={
+  members:[],
+  activeIds:new Set(),
+  singlesIds:new Set(),
+  fixedPairs:[],
+  totalCourts:2,
+  singlesCourts:0,
+  courts:[],
+  games:[],
+  gameCounter:0,
+  optPower:true,       // legacy — keep for load compat
+  powerMode:'balance', // 'balance' | 'strong' | 'same' | 'off'
+  optRepeat:true,
+  usePoints:true,
+  ptWin:3,
+  ptDraw:1,
+  ptLoss:0,
+};
+// computed
+Object.defineProperty(S,'doublesCourts',{get(){return S.totalCourts-S.singlesCourts;}});
+let tab='game';
+let selectedWaiting=null; // currently selected waiting player id
+
+// ═══════════════════════
+//  PERSIST
+// ═══════════════════════
+function save(){
+  try{
+    const CHUNK=50;
+    const mCh=[];
+    for(let i=0;i<S.members.length;i+=CHUNK) mCh.push(S.members.slice(i,i+CHUNK));
+    localStorage.setItem('bd_meta',JSON.stringify({
+      mChunks:mCh.length,
+      activeIds:[...S.activeIds],singlesIds:[...S.singlesIds],
+      fixedPairs:S.fixedPairs,
+      totalCourts:S.totalCourts,singlesCourts:S.singlesCourts,
+      optPower:S.optPower,optRepeat:S.optRepeat,powerMode:S.powerMode,
+      gameCounter:S.gameCounter,usePoints:S.usePoints,
+      ptWin:S.ptWin,ptDraw:S.ptDraw,ptLoss:S.ptLoss,
+    }));
+    mCh.forEach((ch,i)=>localStorage.setItem(`bd_m${i}`,JSON.stringify(ch)));
+    const GCHUNK=100;
+    const gCh=[];
+    for(let i=0;i<S.games.length;i+=GCHUNK) gCh.push(S.games.slice(i,i+GCHUNK));
+    localStorage.setItem('bd_gmeta',JSON.stringify({gChunks:gCh.length}));
+    gCh.forEach((ch,i)=>localStorage.setItem(`bd_g${i}`,JSON.stringify(ch)));
+    localStorage.setItem('bd_courts',JSON.stringify(S.courts));
+  }catch(e){console.warn('save',e);}
+  // Immediate push to scoreboards (debounced)
+  schedulePush();
+}
+
+let pushDebounce=null;
+function schedulePush(){
+  if(typeof scoreSessionId==='undefined'||!scoreSessionId)return;
+  if(pushDebounce)clearTimeout(pushDebounce);
+  pushDebounce=setTimeout(()=>{pushGamesToScoreboard();},400);
+}
+function load(){
+  try{
+    const meta=JSON.parse(localStorage.getItem('bd_meta')||'null');
+    if(!meta)return;
+    S.members=[];
+    for(let i=0;i<meta.mChunks;i++) S.members.push(...JSON.parse(localStorage.getItem(`bd_m${i}`)||'[]'));
+    S.activeIds=new Set(meta.activeIds||[]);
+    S.singlesIds=new Set(meta.singlesIds||[]);
+    S.fixedPairs=meta.fixedPairs||[];
+    S.totalCourts=meta.totalCourts||2;
+    S.singlesCourts=meta.singlesCourts||0;
+    S.optPower=meta.optPower!==undefined?meta.optPower:true;
+    S.optRepeat=meta.optRepeat!==undefined?meta.optRepeat:true;
+    // powerMode: migrate from legacy optPower bool
+    S.powerMode=meta.powerMode||(meta.optPower===false?'off':'balance');
+    S.gameCounter=meta.gameCounter||0;
+    S.usePoints=meta.usePoints!==undefined?meta.usePoints:true;
+    S.ptWin=meta.ptWin!==undefined?meta.ptWin:3;
+    S.ptDraw=meta.ptDraw!==undefined?meta.ptDraw:1;
+    S.ptLoss=meta.ptLoss!==undefined?meta.ptLoss:0;
+    const gm2=JSON.parse(localStorage.getItem('bd_gmeta')||'null');
+    S.games=[];
+    if(gm2) for(let i=0;i<gm2.gChunks;i++) S.games.push(...JSON.parse(localStorage.getItem(`bd_g${i}`)||'[]'));
+    S.courts=JSON.parse(localStorage.getItem('bd_courts')||'[]');
+  }catch(e){console.warn('load',e);}
+}
+
+// ═══════════════════════
+//  HELPERS
+// ═══════════════════════
+const uid=()=>Math.random().toString(36).slice(2,9);
+const shuf=a=>{let b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;};
+const gm=id=>S.members.find(m=>m.id===id);
+const sorted=()=>[...S.members].sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+const getActive=()=>[...S.activeIds].map(gm).filter(Boolean);
+const getDbl=()=>getActive().filter(m=>!S.singlesIds.has(m.id));
+const getSng=()=>getActive().filter(m=>S.singlesIds.has(m.id));
+const pk=ids=>[...ids].sort().join('-');
+
+function showToast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2000);
+}
+
+// Centered modal alert — white bg, orange text (Fix 1)
+function showAlert(msg){
+  document.getElementById('modal-inner').innerHTML=`
+    <div style="text-align:center;padding:8px 0 16px">
+      <div style="font-size:15px;font-weight:700;color:var(--ora);line-height:1.6">${msg}</div>
+    </div>
+    <button class="btn btn-outline btn-full" onclick="closeModal()">OK</button>`;
+  document.getElementById('overlay').classList.add('show');
+}
+
+function recentPairs(){
+  const c={};
+  S.games.slice(-15).forEach(g=>{
+    if(g.teamA.length>=2){const k=pk(g.teamA);c[k]=(c[k]||0)+1;}
+    if(g.teamB.length>=2){const k=pk(g.teamB);c[k]=(c[k]||0)+1;}
+  });
+  return c;
+}
+
+// ═══════════════════════
+//  SCREENS
+// ═══════════════════════
+function showOnly(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show'));document.getElementById(id).classList.add('show');}
+let mgmtOrigin='setup'; // 'setup' or 'main'
+function goSetup(){showOnly('sc-setup');renderSetup();}
+function goMgmt(from){mgmtOrigin=from||'setup';showOnly('sc-mgmt');renderMgmt();}
+function goMgmtBack(){if(mgmtOrigin==='main')goMain();else goSetup();}
+function goMain(){showOnly('sc-main');goTab(tab);}
+
+// ═══════════════════════
+//  SETUP
+// ═══════════════════════
+function renderSetup(){
+  document.getElementById('court-sel').innerHTML=[1,2,3,4,5,6].map(n=>
+    `<button class="nbtn ${S.totalCourts===n?'on':''}" onclick="setTC(${n})">${n}</button>`
+  ).join('');
+  const sm=sorted();
+  const el=document.getElementById('setup-grid');
+  el.innerHTML=sm.length
+    ?sm.map(m=>`<div class="mcell ${S.activeIds.has(m.id)?'on':''}" onclick="togActive('${m.id}')">${m.name}</div>`).join('')
+    :'<div class="sm" style="grid-column:span 4;padding:8px 0">メンバー管理から追加してください</div>';
+  const cnt=[...S.activeIds].filter(id=>S.members.find(m=>m.id===id)).length;
+  document.getElementById('setup-sum').textContent=`参加 ${cnt}人 / ${S.totalCourts}面`;
+}
+function setTC(n){S.totalCourts=n;if(S.singlesCourts>n)S.singlesCourts=n;save();renderSetup();}
+function setTCig(n){
+  if(n<S.totalCourts&&S.courts.length){
+    // Courts being removed may have game history
+    const removedLabels=COURT_LABELS.slice(n);
+    const hasHistory=S.courts.some(c=>removedLabels.includes(c.label)&&c.games.some(g=>g.confirmed));
+    if(hasHistory){
+      _pendingTCig=n;
+      document.getElementById('modal-inner').innerHTML=`
+        <div class="mtitle">コート数を減らす</div>
+        <div style="font-size:14px;line-height:1.7;color:var(--g3);margin-bottom:16px">
+          コート数を減らすと、そのコートのゲーム表示が消えます。<br>
+          <strong>※ 勝敗データは戦績に残ります</strong>
+        </div>
+        <button class="btn btn-ora btn-full" style="margin-bottom:8px" onclick="execTCig()">減らす</button>
+        <button class="btn btn-outline btn-full" onclick="closeModal()">キャンセル</button>`;
+      document.getElementById('overlay').classList.add('show');
+      return;
+    }
+  }
+  _applyTCig(n);
+}
+let _pendingTCig=null;
+function execTCig(){closeModal();_applyTCig(_pendingTCig);}
+function _applyTCig(n){
+  S.totalCourts=n;
+  if(S.singlesCourts>n)S.singlesCourts=n;
+  if(S.courts.length) rebuildCourts();
+  save();renderTab();
+}
+
+function setSCig(n){
+  S.singlesCourts=Math.min(n,S.totalCourts);
+  if(S.courts.length) rebuildCourts();
+  save();renderTab();
+}
+function rebuildCourts(){
+  const oldCourts=S.courts;
+  const dCount=S.doublesCourts;
+  const sCount=S.singlesCourts;
+  const newCourts=[];
+
+  for(let i=0;i<dCount;i++){
+    const label=COURT_LABELS[i];
+    // Prefer same label+type; fallback to same label any type (preserve history)
+    const old=oldCourts.find(c=>c.label===label&&c.type==='doubles')
+           ||oldCourts.find(c=>c.label===label);
+    newCourts.push(old?{...old,type:'doubles'}:{label,type:'doubles',games:[]});
+  }
+  for(let i=0;i<sCount;i++){
+    const label=COURT_LABELS[dCount+i];
+    const old=oldCourts.find(c=>c.label===label&&c.type==='singles')
+           ||oldCourts.find(c=>c.label===label);
+    newCourts.push(old?{...old,type:'singles'}:{label,type:'singles',games:[]});
+  }
+
+  S.courts=newCourts;
+  // Add first game to any new empty courts using full-pool assignment
+  const hasEmpty=S.courts.some(c=>!c.games.length);
+  if(hasEmpty) addGamesAllCourts();
+}
+function togActive(id){S.activeIds.has(id)?S.activeIds.delete(id):S.activeIds.add(id);save();renderSetup();}
+function togActiveMain(id){S.activeIds.has(id)?S.activeIds.delete(id):S.activeIds.add(id);save();renderTab();}
+function selAll(){S.members.forEach(m=>S.activeIds.add(m.id));save();renderSetup();}
+function clearAll(){S.activeIds.clear();save();renderSetup();}
+function startGame(){
+  const cnt=[...S.activeIds].filter(id=>S.members.find(m=>m.id===id)).length;
+  if(cnt<2){alert('参加メンバーを2人以上選んでください');return;}
+  S.courts=[];S.gameCounter=0;
+  initCourts();
+  goMain();
+}
+
+// ═══════════════════════
+//  MEMBER MGMT
+// ═══════════════════════
+function renderMgmt(){
+  const sm=sorted();
+  document.getElementById('member-count').textContent=sm.length;
+  const el=document.getElementById('mgmt-list');
+  if(!sm.length){el.innerHTML='<div class="sm">メンバーなし</div>';return;}
+  el.innerHTML=sm.map(m=>{
+    const stars=[1,2,3,4,5].map(n=>
+      `<span class="mstar ${m.power>=n?'on':''}" onclick="setPow('${m.id}',${n})">★</span>`
+    ).join('');
+    return`<div class="mitem" id="mi-${m.id}">
+      <div class="mname-txt">${m.name}</div>
+      <div class="mstars">${stars}</div>
+      <button class="mdel" onclick="delMember('${m.id}')">×</button>
+    </div>`;
+  }).join('');
+}
+
+function addMember(){
+  const inp=document.getElementById('add-inp');
+  const name=inp.value.trim();
+  if(!name)return;
+  if(S.members.find(m=>m.name===name)){showToast('⚠ 同じ名前が既に存在します');return;}
+  const newM={id:uid(),name,power:3};
+  S.members.push(newM);
+  inp.value=''; // clear before re-render
+  save();
+  renderMgmt();
+  // clear again after render in case DOM was replaced
+  const inp2=document.getElementById('add-inp');
+  if(inp2){inp2.value='';inp2.focus();}
+  showToast(`✓ ${name} を追加しました！`);
+}
+
+function setPow(id,p){
+  const m=gm(id);if(!m)return;
+  m.power=p;save();
+  // update just the stars in DOM
+  const row=document.getElementById(`mi-${id}`);
+  if(row){
+    const stars=row.querySelectorAll('.mstar');
+    stars.forEach((s,i)=>s.classList.toggle('on',i<p));
+  }
+}
+
+function delMember(id){
+  const m=gm(id);
+  const name=m?m.name:'このメンバー';
+  const row=document.getElementById(`mi-${id}`);
+  if(!row)return;
+  if(row.dataset.confirming==='1'){
+    S.members=S.members.filter(x=>x.id!==id);
+    S.activeIds.delete(id);S.singlesIds.delete(id);
+    S.fixedPairs=S.fixedPairs.filter(fp=>fp.a!==id&&fp.b!==id);
+    save();renderMgmt();
+    showToast(`${name} を削除しました`);
+    return;
+  }
+  row.dataset.confirming='1';
+  const delBtn=row.querySelector('.mdel');
+  if(delBtn){delBtn.textContent='削除確定';delBtn.style.cssText='color:var(--ora);font-weight:700;font-size:11px;background:none;border:none;cursor:pointer;';}
+  setTimeout(()=>{
+    if(row&&row.dataset.confirming==='1'){
+      row.dataset.confirming='0';
+      if(delBtn){delBtn.textContent='×';delBtn.style.cssText='';}
+    }
+  },3000);
+}
+
+// ═══════════════════════
+//  COURT / GAME GENERATION
+// ═══════════════════════
+const COURT_LABELS=['A','B','C','D','E','F'];
+
+function initCourts(){
+  const dCount=S.doublesCourts;
+  const sCount=S.singlesCourts;
+  S.courts=[];
+  for(let i=0;i<dCount;i++) S.courts.push({label:COURT_LABELS[i],type:'doubles',games:[]});
+  for(let i=0;i<sCount;i++) S.courts.push({label:COURT_LABELS[dCount+i],type:'singles',games:[]});
+  // Add games to all courts from full pool (no sequential inPlay interference)
+  addGamesAllCourts();
+  save();
+}
+
+// Add first game to all empty courts in one pass
+function addGamesAllCourts(){
+  // Step1: push placeholder WITHOUT incrementing gameCounter
+  S.courts.forEach((ct,ci)=>{
+    if(!ct.games.length){
+      ct.games.push({id:uid(),gameNum:0,courtType:ct.type,teamA:[],teamB:[],result:null,scoreA:null,scoreB:null,confirmed:false});
+    }
+  });
+  // Step2: assign pairings and set proper gameNum
+  S.courts.forEach((ct,ci)=>{
+    const idx=ct.games.findIndex(g=>!g.confirmed&&g.gameNum===0);
+    if(idx<0)return;
+    const old=ct.games[idx];
+    S.gameCounter++;
+    const pairing=buildOnePairing(ct.type,ci);
+    ct.games[idx]={...old,gameNum:S.gameCounter,teamA:pairing.teamA,teamB:pairing.teamB};
+  });
+}
+
+// Get all member IDs currently in an unconfirmed (in-play) game
+function inPlayIds(){
+  const ids=new Set();
+  S.courts.forEach(ct=>{
+    ct.games.forEach(g=>{
+      if(!g.confirmed){g.teamA.forEach(id=>ids.add(id));g.teamB.forEach(id=>ids.add(id));}
+    });
+  });
+  return ids;
+}
+
+function buildOnePairing(type, excludeCi){
+  const inPlay=new Set();
+  S.courts.forEach(ct=>{
+    ct.games.forEach(g=>{
+      // Only block: unconfirmed games that have NO result yet AND have actual players
+      // - result selected → player is "done", free for next court
+      // - empty teams → nobody to block
+      if(!g.confirmed && g.result===null && (g.teamA.length||g.teamB.length)){
+        g.teamA.forEach(id=>inPlay.add(id));
+        g.teamB.forEach(id=>inPlay.add(id));
+      }
+    });
+  });
+
+  // Participation count
+  const gameCnt={};
+  S.games.forEach(g=>{[...g.teamA,...g.teamB].forEach(id=>{gameCnt[id]=(gameCnt[id]||0)+1;});});
+
+  // Sort by game count ASC (fewest first), shuffle within same count for fairness
+  const fairSort=(arr)=>{
+    // group by count, shuffle each group, then concat in ascending order
+    const groups={};
+    arr.forEach(m=>{const c=gameCnt[m.id]||0;if(!groups[c])groups[c]=[];groups[c].push(m);});
+    return Object.keys(groups).sort((a,b)=>Number(a)-Number(b))
+      .flatMap(k=>shuf(groups[k]));
+  };
+
+  // ── SINGLES ──
+  if(type==='singles'){
+    const confirmedInPlay=new Set();
+    S.courts.forEach(ct=>{
+      ct.games.forEach(g=>{
+        if(!g.confirmed&&(g.teamA.length||g.teamB.length)){
+          g.teamA.forEach(id=>confirmedInPlay.add(id));
+          g.teamB.forEach(id=>confirmedInPlay.add(id));
+        }
+      });
+    });
+    const pool=fairSort(getActive().filter(m=>S.singlesIds.has(m.id)&&!confirmedInPlay.has(m.id)));
+    if(pool.length<2) return{teamA:[],teamB:[]};
+    return{teamA:[pool[0].id],teamB:[pool[1].id]};
+  }
+
+  // ── DOUBLES ──
+  // Step 1: get available players sorted by participation (fewest games first)
+  const allAvail=fairSort(getActive().filter(m=>!inPlay.has(m.id)));
+  if(allAvail.length<4) return{teamA:[],teamB:[]};
+
+  // Fixed pairs
+  const used=new Set();const fixedTeams=[];
+  S.fixedPairs.forEach(fp=>{
+    const ma=allAvail.find(m=>m.id===fp.a),mb=allAvail.find(m=>m.id===fp.b);
+    if(ma&&mb&&!used.has(fp.a)&&!used.has(fp.b)){fixedTeams.push([ma,mb]);used.add(fp.a);used.add(fp.b);}
+  });
+  const rem=allAvail.filter(m=>!used.has(m.id));
+
+  // Step 2: select which players participate in THIS court
+  // For 'strict' mode, we need same-level groups of 4
+  // For all other modes: take the top N players by participation count that fit the power constraint
+
+  let teamA=[], teamB=[];
+
+  if(S.powerMode==='strict'){
+    // Need 4 players of the same level
+    // Prioritize the level whose members have played the LEAST on average
+    const levels=[5,4,3,2,1];
+    // For each level, compute average game count among available players
+    const levelGroups=levels.map(lv=>{
+      const g=rem.filter(m=>m.power===lv);
+      if(g.length<4) return null;
+      const avgCnt=g.reduce((s,m)=>s+(gameCnt[m.id]||0),0)/g.length;
+      return{lv,g,avgCnt};
+    }).filter(Boolean);
+
+    if(!levelGroups.length) return{teamA:[],teamB:[]};
+
+    // Sort levels by average participation count ASC (least played first)
+    levelGroups.sort((a,b)=>a.avgCnt-b.avgCnt);
+
+    const chosen=levelGroups[0];
+    // Within this level, pick 4 least-played players
+    const sorted=chosen.g.slice().sort((a,b)=>(gameCnt[a.id]||0)-(gameCnt[b.id]||0));
+    const pick=shuf(sorted.slice(0,4)); // shuffle among the 4 least-played
+    return{teamA:[pick[0].id,pick[1].id],teamB:[pick[2].id,pick[3].id]};
+  }
+
+  // For other modes: we need exactly 4 players → pick the 4 least-played,
+  // then arrange them into 2 pairs according to powerMode
+  if(rem.length<4) return{teamA:[],teamB:[]};
+
+  // Pick top 8 candidates by participation (fairSort already done)
+  const poolSize=Math.min(8,rem.length);
+  const candidates=rem.slice(0,poolSize);
+
+  let p1,p2,p3,p4;
+
+  if(S.powerMode==='off'){
+    // Unpaired/unmet priority logic - use rem (all available players for this court)
+    const pairedSetO=new Set();
+    const metSetO=new Set();
+    S.games.filter(g=>g.type==='doubles').forEach(g=>{
+      for(let i=0;i<g.teamA.length;i++)for(let j=i+1;j<g.teamA.length;j++)pairedSetO.add([g.teamA[i],g.teamA[j]].sort().join('|'));
+      for(let i=0;i<g.teamB.length;i++)for(let j=i+1;j<g.teamB.length;j++)pairedSetO.add([g.teamB[i],g.teamB[j]].sort().join('|'));
+    });
+    S.games.forEach(g=>{g.teamA.forEach(a=>g.teamB.forEach(b=>metSetO.add([a,b].sort().join('|'))));});
+    const isP=(a,b)=>pairedSetO.has([a.id,b.id].sort().join('|'));
+    const isM=(a,b)=>metSetO.has([a.id,b.id].sort().join('|'));
+    // rem = all available players not yet assigned (full pool, not limited to 8)
+    const pool=rem;
+    let bestScore=Infinity,bestArr=null;
+
+    // Build ALL unpaired pairs, then SHUFFLE to remove positional bias
+    let unpairedPairs=[];
+    for(let i=0;i<pool.length;i++)
+      for(let j=i+1;j<pool.length;j++)
+        if(!isP(pool[i],pool[j]))
+          unpairedPairs.push([pool[i],pool[j]]);
+    unpairedPairs=shuf(unpairedPairs); // shuffle to eliminate ordering bias
+
+    if(unpairedPairs.length>=2){
+      // Try all combinations of 2 unpaired pairs (up to limit)
+      const limit=Math.min(unpairedPairs.length,60);
+      for(let i=0;i<limit;i++){
+        for(let j=i+1;j<limit;j++){
+          const [a,b]=unpairedPairs[i],[c,d]=unpairedPairs[j];
+          if(new Set([a.id,b.id,c.id,d.id]).size<4)continue;
+          const mp=(isM(a,c)?1:0)+(isM(a,d)?1:0)+(isM(b,c)?1:0)+(isM(b,d)?1:0);
+          if(mp<bestScore){bestScore=mp;bestArr=[a,b,c,d];}
+          if(bestScore===0)break; // perfect match found
+        }
+        if(bestScore===0)break;
+      }
+    }
+    if(!bestArr&&unpairedPairs.length>=1){
+      // Only 1 unpaired pair available — fix it, find best partner pair
+      for(const [a,b] of unpairedPairs){
+        const rest=shuf(pool.filter(m=>m.id!==a.id&&m.id!==b.id));
+        for(let t=0;t<50;t++){
+          const r=rest.slice(t%Math.max(1,rest.length-1),t%Math.max(1,rest.length-1)+2);
+          if(r.length<2)break;
+          const [c,d]=r;
+          const s=(isM(a,c)?1:0)+(isM(a,d)?1:0)+(isM(b,c)?1:0)+(isM(b,d)?1:0)+(isP(c,d)?50:0);
+          if(s<bestScore){bestScore=s;bestArr=[a,b,c,d];}
+        }
+        // Also try random combos
+        for(let t=0;t<30;t++){
+          const r=shuf(rest.slice()).slice(0,2);if(r.length<2)break;
+          const [c,d]=r;
+          const s=(isM(a,c)?1:0)+(isM(a,d)?1:0)+(isM(b,c)?1:0)+(isM(b,d)?1:0)+(isP(c,d)?50:0);
+          if(s<bestScore){bestScore=s;bestArr=[a,b,c,d];}
+        }
+      }
+    }
+    if(!bestArr){
+      // fallback: minimize met opponents only
+      for(let t=0;t<300;t++){
+        const c=shuf(pool.slice()).slice(0,4);if(c.length<4)break;
+        const opts=[
+          {arr:[c[0],c[1],c[2],c[3]],s:(isM(c[0],c[2])?1:0)+(isM(c[0],c[3])?1:0)+(isM(c[1],c[2])?1:0)+(isM(c[1],c[3])?1:0)},
+          {arr:[c[0],c[2],c[1],c[3]],s:(isM(c[0],c[1])?1:0)+(isM(c[0],c[3])?1:0)+(isM(c[2],c[1])?1:0)+(isM(c[2],c[3])?1:0)},
+          {arr:[c[0],c[3],c[1],c[2]],s:(isM(c[0],c[1])?1:0)+(isM(c[0],c[2])?1:0)+(isM(c[3],c[1])?1:0)+(isM(c[3],c[2])?1:0)},
+        ];
+        opts.sort((a,b)=>a.s-b.s);
+        if(opts[0].s<bestScore){bestScore=opts[0].s;bestArr=opts[0].arr;}
+      }
+    }
+    [p1,p2,p3,p4]=bestArr||shuf(pool.slice()).slice(0,4);
+  }
+  else if(S.powerMode==='balance'){
+    // From candidates, pair strong+weak within the group
+    const strong=candidates.filter(m=>m.power>=4);
+    const weak  =candidates.filter(m=>m.power<=2);
+    const mid   =candidates.filter(m=>m.power===3);
+    const filler=[...weak,...mid,...strong]; // fallback order
+    // Build 2 balanced pairs from candidates
+    if(strong.length>=2&&filler.length>=4){
+      p1=strong[0];p2=filler.find(m=>m.id!==p1.id&&m.power<=(p1.power||3))||filler.find(m=>m.id!==p1.id);
+      p3=strong[1]||candidates.find(m=>![p1,p2].map(x=>x.id).includes(m.id));
+      p4=candidates.find(m=>![p1,p2,p3].filter(Boolean).map(x=>x.id).includes(m.id));
+    } else {
+      [p1,p2,p3,p4]=candidates.slice(0,4);
+    }
+  }
+  else if(S.powerMode==='strong'){
+    // Split into upper (★4-5) and lower (★1-3) groups
+    // Within each group, match teams so total power sums are equal (like 'same' mode)
+    // Prioritize the group with fewer average games played
+    const upper=rem.filter(m=>m.power>=4);
+    const lower=rem.filter(m=>m.power<=3);
+
+    // Pick group with lowest average game count that has ≥4 members
+    const avgCnt=arr=>arr.length?arr.reduce((s,m)=>s+(gameCnt[m.id]||0),0)/arr.length:Infinity;
+    let pool=null;
+    if(upper.length>=4&&lower.length>=4){
+      pool=avgCnt(upper)<=avgCnt(lower)?upper:lower;
+    } else if(upper.length>=4){
+      pool=upper;
+    } else if(lower.length>=4){
+      pool=lower;
+    }
+
+    if(!pool||pool.length<4){
+      // fallback: use all candidates
+      [p1,p2,p3,p4]=candidates.slice(0,4);
+    } else {
+      // Within pool, find 4 players where pair power sums are closest (same mode logic)
+      // fairSort already applied to rem, pool preserves that order
+      const cands=pool.slice(0,Math.min(8,pool.length));
+      let best=cands.slice(0,4),bestDiff=Infinity;
+      for(let t=0;t<100;t++){
+        const c=shuf(cands).slice(0,4);
+        const sA=(c[0].power||3)+(c[1].power||3);
+        const sB=(c[2].power||3)+(c[3].power||3);
+        const d=Math.abs(sA-sB);
+        if(d<bestDiff){bestDiff=d;best=c;}
+      }
+      [p1,p2,p3,p4]=best;
+    }
+  }
+  else if(S.powerMode==='same'){
+    // Among candidates, find 4 where pair power sums are equal
+    let best=candidates.slice(0,4),bestDiff=Infinity;
+    for(let t=0;t<100;t++){
+      const c=shuf(candidates).slice(0,4);
+      const sA=(c[0].power||3)+(c[1].power||3);
+      const sB=(c[2].power||3)+(c[3].power||3);
+      const d=Math.abs(sA-sB);
+      if(d<bestDiff){bestDiff=d;best=c;}
+    }
+    [p1,p2,p3,p4]=best;
+  }
+  else {
+    // 'off' mode: ENFORCE unpaired combos first, then optimize unmet opponents
+    const pairedSet=new Set();
+    const metSet=new Set();
+    S.games.filter(g=>g.type==='doubles').forEach(g=>{
+      for(let i=0;i<g.teamA.length;i++)
+        for(let j=i+1;j<g.teamA.length;j++)
+          pairedSet.add([g.teamA[i],g.teamA[j]].sort().join('|'));
+      for(let i=0;i<g.teamB.length;i++)
+        for(let j=i+1;j<g.teamB.length;j++)
+          pairedSet.add([g.teamB[i],g.teamB[j]].sort().join('|'));
+    });
+    S.games.forEach(g=>{
+      g.teamA.forEach(a=>g.teamB.forEach(b=>metSet.add([a,b].sort().join('|'))));
+    });
+
+    const isPaired=(a,b)=>pairedSet.has([a.id,b.id].sort().join('|'));
+    const isMet=(a,b)=>metSet.has([a.id,b.id].sort().join('|'));
+
+    // Use ALL candidates (not just top 8) to find unpaired combos
+    const pool=candidates;
+    if(pool.length<4){[p1,p2,p3,p4]=pool.slice(0,4);}
+    else{
+      // Check if any unpaired pair combo exists among ALL pool members
+      const unpairedPairs=[];
+      for(let i=0;i<pool.length;i++)
+        for(let j=i+1;j<pool.length;j++)
+          if(!isPaired(pool[i],pool[j]))
+            unpairedPairs.push([pool[i],pool[j]]);
+
+      let bestScore=Infinity,bestArr=null;
+
+      if(unpairedPairs.length>=2){
+        // Must form 2 unpaired pairs → try all combinations of 2 unpaired pairs
+        for(let i=0;i<unpairedPairs.length&&i<60;i++){
+          for(let j=i+1;j<unpairedPairs.length&&j<60;j++){
+            const [a,b]=unpairedPairs[i];
+            const [c,d]=unpairedPairs[j];
+            // No player overlap
+            const ids=new Set([a.id,b.id,c.id,d.id]);
+            if(ids.size<4)continue;
+            // Prefer players with fewer games (fairSort already handles this via candidates order)
+            const mp=(isMet(a,c)?1:0)+(isMet(a,d)?1:0)+(isMet(b,c)?1:0)+(isMet(b,d)?1:0);
+            if(mp<bestScore){bestScore=mp;bestArr=[a,b,c,d];}
+          }
+        }
+      }
+
+      if(!bestArr&&unpairedPairs.length>=1){
+        // At least 1 unpaired pair → fix that pair, find best partner pair
+        for(const [a,b] of unpairedPairs.slice(0,40)){
+          const rest=pool.filter(m=>m.id!==a.id&&m.id!==b.id);
+          for(let t=0;t<50;t++){
+            const r=shuf(rest).slice(0,2);
+            if(r.length<2)break;
+            const [c,d]=r;
+            const mp=(isMet(a,c)?1:0)+(isMet(a,d)?1:0)+(isMet(b,c)?1:0)+(isMet(b,d)?1:0);
+            const pp=isPaired(c,d)?50:0; // prefer unpaired partner pair too
+            const s=mp+pp;
+            if(s<bestScore){bestScore=s;bestArr=[a,b,c,d];}
+          }
+        }
+      }
+
+      if(!bestArr){
+        // All pairs exhausted — minimize met opponents
+        const smallPool=pool.slice(0,Math.min(8,pool.length));
+        for(let t=0;t<200;t++){
+          const c=shuf(smallPool).slice(0,4);
+          if(c.length<4)break;
+          const opts=[
+            {arr:[c[0],c[1],c[2],c[3]],s:(isMet(c[0],c[2])?1:0)+(isMet(c[0],c[3])?1:0)+(isMet(c[1],c[2])?1:0)+(isMet(c[1],c[3])?1:0)},
+            {arr:[c[0],c[2],c[1],c[3]],s:(isMet(c[0],c[1])?1:0)+(isMet(c[0],c[3])?1:0)+(isMet(c[2],c[1])?1:0)+(isMet(c[2],c[3])?1:0)},
+            {arr:[c[0],c[3],c[1],c[2]],s:(isMet(c[0],c[1])?1:0)+(isMet(c[0],c[2])?1:0)+(isMet(c[3],c[1])?1:0)+(isMet(c[3],c[2])?1:0)},
+          ];
+          opts.sort((a,b)=>a.s-b.s);
+          if(opts[0].s<bestScore){bestScore=opts[0].s;bestArr=opts[0].arr;}
+        }
+      }
+
+      [p1,p2,p3,p4]=bestArr||pool.slice(0,4);
+    }
+  }
+
+  if(!p1||!p2||!p3||!p4){
+    const pick=candidates.slice(0,4);
+    [p1,p2,p3,p4]=pick;
+  }
+
+  // Apply avoid-repeat within the chosen 4
+  if(S.optRepeat){
+    const rp=recentPairs();
+    const arrangements=[
+      [p1,p2,p3,p4],[p1,p3,p2,p4],[p1,p4,p2,p3]
+    ];
+    let bestArr=arrangements[0],bestS=Infinity;
+    arrangements.forEach(arr=>{
+      const s=(rp[pk([arr[0].id,arr[1].id])]||0)+(rp[pk([arr[2].id,arr[3].id])]||0);
+      if(s<bestS){bestS=s;bestArr=arr;}
+    });
+    [p1,p2,p3,p4]=bestArr;
+  }
+
+  return{
+    teamA:[p1.id,p2.id],
+    teamB:[p3.id,p4.id],
+  };
+}
+
+function addGameToCourt(ci){
+  const court=S.courts[ci];if(!court)return;
+  S.gameCounter++;
+  const pairing=buildOnePairing(court.type,ci);
+  court.games.push({
+    id:uid(),gameNum:S.gameCounter,
+    courtType:court.type,  // snapshot type at creation — survives court rebuilds
+    teamA:pairing.teamA,teamB:pairing.teamB,
+    result:null,scoreA:null,scoreB:null,confirmed:false
+  });
+}
+
+function waitingPlayers(){
+  const inPlay=inPlayIds();
+  return getActive().filter(m=>!inPlay.has(m.id));
+}
+
+// ═══════════════════════
+//  TABS
+// ═══════════════════════
+function goTab(t){
+  tab=t;
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.toggle('on',b.id==='tb-'+t));
+  const titles={game:'ゲーム',members:'メンバー',stats:'戦績',settings:'設定'};
+  document.getElementById('main-title').textContent=titles[t]||'';
+  document.getElementById('main-sub').textContent=t==='game'?`${S.totalCourts}面 / 参加${[...S.activeIds].filter(id=>S.members.find(m=>m.id===id)).length}人`:'';
+  // Show reset button only on game tab
+  const resetBtn=document.getElementById('reset-btn');
+  if(resetBtn) resetBtn.style.display=t==='game'?'':'none';
+  renderTab();
+}
+function renderTab(){
+  const el=document.getElementById('tab-body');
+  // Save horizontal scroll position of courts before re-render
+  const courtScroll=document.querySelector('.courts-scroll-wrap');
+  const savedScrollLeft=courtScroll?courtScroll.scrollLeft:0;
+
+  if(tab==='game')          el.innerHTML=renderGame();
+  else if(tab==='members')  el.innerHTML=renderMembers();
+  else if(tab==='stats')    el.innerHTML=renderStats();
+  else if(tab==='settings') el.innerHTML=renderSettings();
+
+  // Restore horizontal scroll position after re-render
+  if(tab==='game'&&savedScrollLeft>0){
+    const newWrap=document.querySelector('.courts-scroll-wrap');
+    if(newWrap) newWrap.scrollLeft=savedScrollLeft;
+  }
+}
+
+// ═══════════════════════
+//  TAB: GAME
+// ═══════════════════════
+
+// SVG icon badge for doubles / singles
+function typeBadge(type){
+  const person=`<svg width="10" height="13" viewBox="0 0 10 13" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="5" cy="3.5" r="2.5" fill="currentColor"/><path d="M1 12c0-2.21 1.79-4 4-4s4 1.79 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+  if(type==='doubles'){
+    return`<span style="display:flex;align-items:center;gap:2px;opacity:.85">${person}${person}</span>`;
+  }
+  return`<span style="display:flex;align-items:center;opacity:.85">${person}</span>`;
+}
+
+function renderGame(){
+  if(!S.courts.length) return '<div class="sm">コートが設定されていません</div>';
+
+  const ptLabel=S.usePoints?'点数表示 ON':'点数表示 OFF';
+  const ptStyle=S.usePoints?'background:var(--ora);color:#fff;border-color:var(--ora)':'';
+  const ctrl=`<div class="game-ctrl">
+    <span class="sm">${S.totalCourts}面</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-outline btn-sm" style="${ptStyle}" onclick="S.usePoints=!S.usePoints;save();renderTab()">${ptLabel}</button>
+      <button class="btn btn-outline btn-sm" onclick="reshuffleAll()">全シャッフル</button>
+    </div>
+  </div>`;
+
+  const cols=S.courts.map((ct,ci)=>renderCourtColumn(ct,ci)).join('');
+  const colCount=Math.max(S.courts.length,1);
+  const columnsHtml=`<div class="courts-scroll-wrap"><div class="courts-columns" style="grid-template-columns:repeat(${colCount},minmax(195px,1fr))">${cols}</div></div>`;
+
+  const w=waitingPlayers();
+  const waitHtml=w.length
+    ?`<div class="wait-section"><div class="wait-label">待機中 ${w.length}人 ${selectedWaiting?'<span style="color:var(--ora);font-size:10px">→ コートの空欄をタップして配置</span>':''}</div>
+       <div class="wait-chips">${w.map(m=>`<div class="wait-chip ${selectedWaiting===m.id?'wait-chip-sel':''}" onclick="selectWaiting('${m.id}')" style="${selectedWaiting===m.id?'background:var(--ora);color:#fff;border-color:var(--ora)':''}">${m.name}</div>`).join('')}</div></div>`
+    :'';
+
+  // Fix 8: compact game count — flex-wrap pills
+  const gameCounts={};
+  S.games.forEach(g=>{[...g.teamA,...g.teamB].forEach(id=>{gameCounts[id]=(gameCounts[id]||0)+1;});});
+  const aArr=getActive();
+  const countItems=aArr
+    .slice().sort((a,b)=>((gameCounts[b.id]||0)-(gameCounts[a.id]||0))||a.name.localeCompare(b.name,'ja'))
+    .map(m=>`<div style="display:flex;align-items:center;gap:3px;font-size:11px;background:var(--g7);border-radius:6px;padding:3px 7px;white-space:nowrap"><span style="font-weight:600">${m.name}</span><span style="color:var(--ora);font-weight:700;margin-left:2px">${gameCounts[m.id]||0}</span></div>`)
+    .join('');
+  const countHtml=aArr.length
+    ?`<div class="wait-section" style="margin-top:6px"><div class="wait-label">参加回数</div><div style="display:flex;flex-wrap:wrap;gap:5px">${countItems}</div></div>`
+    :'';
+
+  // Build paired set (same team in doubles) — S.games are ALL confirmed
+  const pairedSet=new Set();
+  S.games.filter(g=>g.type==='doubles').forEach(g=>{
+    for(let i=0;i<g.teamA.length;i++)
+      for(let j=i+1;j<g.teamA.length;j++)
+        pairedSet.add([g.teamA[i],g.teamA[j]].sort().join('|'));
+    for(let i=0;i<g.teamB.length;i++)
+      for(let j=i+1;j<g.teamB.length;j++)
+        pairedSet.add([g.teamB[i],g.teamB[j]].sort().join('|'));
+  });
+
+  // Build met set (faced across the net = A team vs B team only)
+  const metSet=new Set();
+  S.games.forEach(g=>{
+    g.teamA.forEach(a=>{
+      g.teamB.forEach(b=>{
+        metSet.add([a,b].sort().join('|'));
+      });
+    });
+  });
+
+  // All active members can be paired in doubles (singles flag only affects singles court assignment)
+  const dblActive=aArr;
+
+  // Unpaired combinations
+  const unpairedItems=[];
+  for(let i=0;i<dblActive.length;i++)
+    for(let j=i+1;j<dblActive.length;j++){
+      const key=[dblActive[i].id,dblActive[j].id].sort().join('|');
+      if(!pairedSet.has(key))
+        unpairedItems.push(`<div style="font-size:11px;background:var(--g7);border-radius:6px;padding:3px 7px;white-space:nowrap">${dblActive[i].name} & ${dblActive[j].name}</div>`);
+    }
+
+  // Unmet combinations
+  const unmetItems=[];
+  for(let i=0;i<aArr.length;i++)
+    for(let j=i+1;j<aArr.length;j++){
+      const key=[aArr[i].id,aArr[j].id].sort().join('|');
+      if(!metSet.has(key))
+        unmetItems.push(`<div style="font-size:11px;background:var(--g7);border-radius:6px;padding:3px 7px;white-space:nowrap">${aArr[i].name} × ${aArr[j].name}</div>`);
+    }
+
+  const unpairedHtml=unpairedItems.length
+    ?`<div class="wait-section" style="margin-top:6px"><div class="wait-label">まだペアになっていない組み合わせ</div><div style="display:flex;flex-wrap:wrap;gap:5px">${unpairedItems.join('')}</div></div>`
+    :dblActive.length>=2?`<div class="wait-section" style="margin-top:6px"><div class="wait-label">まだペアになっていない組み合わせ</div><div style="font-size:11px;color:var(--g4)">全員ペア済み ✓</div></div>`:'';
+
+  const unmetHtml=unmetItems.length
+    ?`<div class="wait-section" style="margin-top:6px"><div class="wait-label">まだ対戦していない組み合わせ</div><div style="display:flex;flex-wrap:wrap;gap:5px">${unmetItems.join('')}</div></div>`
+    :aArr.length>=2?`<div class="wait-section" style="margin-top:6px"><div class="wait-label">まだ対戦していない組み合わせ</div><div style="font-size:11px;color:var(--g4)">全員対戦済み ✓</div></div>`:'';
+
+  return ctrl+columnsHtml+waitHtml+countHtml+unpairedHtml+unmetHtml;
+}
+
+function renderCourtColumn(ct,ci){
+  const isD=ct.type==='doubles';
+  const headerHtml=`<div class="court-col-header ${isD?'':'singles-h'}">
+    <span>${ct.label}コート</span>
+    <span class="cbadge">${typeBadge(ct.type)}</span>
+  </div>`;
+
+  const gamesHtml=ct.games.map((g,gi)=>{
+    const isActive=!g.confirmed;
+    const isLast=gi===ct.games.length-1;
+    return renderGameCard(g,ci,gi,isActive,isLast);
+  }).join('');
+
+  // Next game button logic — block if scores partial
+  const lastGame=ct.games[ct.games.length-1];
+  const scoresPartial=lastGame&&((lastGame.scoreA!==null)!==(lastGame.scoreB!==null));
+  const canNext=lastGame&&lastGame.result&&!scoresPartial;
+  let nextLabel, nextReady;
+  if(!lastGame){nextLabel='—';nextReady=false;}
+  else if(scoresPartial){nextLabel='もう片方の点数も入力してください';nextReady=false;}
+  else if(canNext){nextLabel='＋ 次のゲーム';nextReady=true;}
+  else{nextLabel='結果を選ぶと次へ';nextReady=false;}
+
+  const nextBtnHtml=`<div class="next-game-btn ${nextReady?'ready':''}" onclick="${nextReady?`nextGameForCourt(${ci})`:''}">
+    ${nextLabel}
+  </div>`;
+
+  return`<div class="court-col">
+    ${headerHtml}
+    ${gamesHtml}
+    ${nextBtnHtml}
+  </div>`;
+}
+
+function renderGameCard(g,ci,gi,isActive,isLast){
+  const selA=g.result==='A',selB=g.result==='B',selD=g.result==='D';
+
+  // Use g.courtType (snapshotted at game creation) so color never changes after court rebuild
+  const courtType=g.courtType||(S.courts[ci]?.type||'doubles');
+  const winHl=courtType==='doubles'?'var(--ora)':'#b83232';
+  const maxPerTeam=courtType==='singles'?1:2;
+
+  const renderNames=(ids,team)=>{
+    const slots=[];
+    for(let i=0;i<ids.length;i++){
+      const m=gm(ids[i]);
+      slots.push(`<div class="pname">${m?m.name:'?'}</div>`);
+    }
+    for(let i=ids.length;i<maxPerTeam;i++){
+      const canPlace=selectedWaiting&&isActive;
+      const slotStyle=canPlace?'cursor:pointer;background:var(--ora2);border-radius:4px;padding:2px 4px;color:var(--ora);font-size:11px':'';
+      const slotClick=canPlace?`onclick="placeInSlot('${g.id}',${ci},'${team}')"` :'';
+      slots.push(`<div class="pname empty-slot" ${slotClick} style="${slotStyle}">${canPlace?'ここに配置':'—'}</div>`);
+    }
+    return slots.join('');
+  };
+
+  // isEmpty = either team not fully filled
+  const isEmpty=g.teamA.length<maxPerTeam||g.teamB.length<maxPerTeam;
+  const canInteract=isActive&&!isEmpty;
+
+  const matchup=`<div class="matchup">
+    <div class="team-side side-a ${selA?'sel-a':''}" onclick="${canInteract?`setRes('${g.id}',${ci},'A')`:''}"
+      style="${isEmpty?'cursor:default;opacity:.5':''}${selA&&!isActive?`;background:${winHl}`:''}">
+      <div class="tlbl" ${selA&&!isActive?`style="color:rgba(255,255,255,.8)"`:''}>A</div>${renderNames(g.teamA,'A')}
+    </div>
+    <div class="vs-center ${selD?'sel-d':''}" onclick="${canInteract?`setRes('${g.id}',${ci},'D')`:''}" style="${isEmpty?'cursor:default':''}">VS</div>
+    <div class="team-side side-b ${selB?'sel-b':''}" onclick="${canInteract?`setRes('${g.id}',${ci},'B')`:''}"
+      style="${isEmpty?'cursor:default;opacity:.5':''}${selB&&!isActive?`;background:${winHl}`:''}">
+      <div class="tlbl" ${selB&&!isActive?`style="color:rgba(255,255,255,.8)"`:''}>B</div>${renderNames(g.teamB,'B')}
+    </div>
+  </div>`;
+
+  let body='';
+
+  // Fix 1: labeled buttons at top, easy to tap
+  if(isActive&&!isEmpty){
+    body+=`<div style="display:flex;gap:4px;padding:5px 6px;border-bottom:1px solid var(--g6)">
+      <button class="btn btn-outline btn-sm" style="flex:1;font-size:11px;padding:6px 4px" onclick="reshuffleCourt(${ci})">シャッフル</button>
+      <button class="btn btn-outline btn-sm" style="flex:1;font-size:11px;padding:6px 4px;color:var(--g4)" onclick="clearCourt(${ci})">✕ 空欄に</button>
+    </div>`;
+  }
+  if(isActive&&isEmpty){
+    body+=`<div style="padding:5px 6px;border-bottom:1px solid var(--g6)">
+      <button class="btn btn-outline btn-sm btn-full" style="font-size:11px;padding:6px 4px" onclick="reshuffleCourt(${ci})">シャッフル</button>
+    </div>`;
+  }
+
+  body+=matchup;
+
+  if(isEmpty&&isActive){
+    body+=`<div class="done-badge" style="color:var(--g4)">人数不足</div>`;
+  }else if(isActive){
+    if(S.usePoints){
+      const aVal=g.scoreA!==null?g.scoreA:'—';
+      const bVal=g.scoreB!==null?g.scoreB:'—';
+      body+=`<div class="score-area">
+        <div class="score-block">
+          <div class="score-lbl">A</div>
+          <div class="score-ctrl">
+            <button class="score-btn" onclick="adjScore('${g.id}',${ci},'a',-1)">−</button>
+            <div class="score-val ${g.scoreA===null?'empty':''}" id="sv-${g.id}-a">${aVal}</div>
+            <button class="score-btn" onclick="adjScore('${g.id}',${ci},'a',1)">+</button>
+          </div>
+        </div>
+        <div class="score-dash">—</div>
+        <div class="score-block">
+          <div class="score-lbl">B</div>
+          <div class="score-ctrl">
+            <button class="score-btn" onclick="adjScore('${g.id}',${ci},'b',-1)">−</button>
+            <div class="score-val ${g.scoreB===null?'empty':''}" id="sv-${g.id}-b">${bVal}</div>
+            <button class="score-btn" onclick="adjScore('${g.id}',${ci},'b',1)">+</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    // buttons now at top of card
+  }else{
+    const rt=g.result==='A'?'A 勝':g.result==='B'?'B 勝':'引き分け';
+    const sc=(g.scoreA!==null&&g.scoreB!==null)?` ${g.scoreA}–${g.scoreB}`:'';
+    // Use snapshotted courtType so color is fixed regardless of court rebuilds
+    const doneType=g.courtType||(S.courts[ci]?.type||'doubles');
+    const winColor=g.result==='D'?'var(--g4)':doneType==='doubles'?'var(--ora)':'#b83232';
+    body+=`<div class="done-badge" style="color:${winColor}">${sc?sc.trim():''}</div>`;
+  }
+
+  const cardClass=isActive?'active-card':isLast?'':'done-card';
+  const typeClass=S.courts[ci]?.type==='singles'?'singles-game':'';
+  return`<div class="game-card ${cardClass} ${typeClass}">${body}</div>`;
+}
+
+// ═══════════════════════
+//  TAB: MEMBERS
+// ═══════════════════════
+function renderMembers(){
+  const sm=sorted();
+  const aArr=getActive();
+
+  // participation chips (active toggle)
+  const chips=sm.map(m=>{
+    const on=S.activeIds.has(m.id);
+    return`<div class="mcell ${on?'on':''}" onclick="togActiveMain('${m.id}')">${m.name}</div>`;
+  }).join('');
+
+  // singles toggle chips (only active members)
+  const sChips=aArr.map(m=>{
+    const isS=S.singlesIds.has(m.id);
+    return`<div class="mcell ${isS?'on':''}" style="font-size:12px" onclick="togSng('${m.id}')">${m.name}${isS?'<br><span style="font-size:9px;opacity:.7">シングルス</span>':''}</div>`;
+  }).join('');
+
+  const opts=aArr.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  const fph=S.fixedPairs.length
+    ?S.fixedPairs.map((fp,i)=>{
+        const ma=gm(fp.a),mb=gm(fp.b);if(!ma||!mb)return'';
+        return`<div class="fpitem"><span class="fptag">固定</span><span style="flex:1;font-weight:500">${ma.name} ✕ ${mb.name}</span><button class="btn-ghost btn-sm" onclick="remFP(${i})">解除</button></div>`;
+      }).join('')
+    :'<div class="sm">固定ペアなし</div>';
+
+  return`<div class="card">
+    <div class="btwn mb8">
+      <div class="clabel" style="margin:0">参加切替</div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button class="btn-ghost" onclick="clearMain()">全解除</button>
+        <button class="btn-ghost" onclick="selMain()" style="color:var(--black);font-weight:700">全選択</button>
+        <button class="ibtn btn-sm" onclick="goMgmt('main')" style="font-size:12px;padding:5px 10px">＋ メンバー管理</button>
+      </div>
+    </div>
+    <div class="mgrid">${chips||'<div class="sm" style="grid-column:span 4">メンバーなし</div>'}</div>
+  </div>
+  <div class="card">
+    <div class="btwn mb8">
+      <div class="clabel" style="margin:0">シングルス参加者</div>
+      <div class="sm">ダブルスに入らない場合にシングルスに参加</div>
+    </div>
+    <div class="mgrid">${sChips||'<div class="sm" style="grid-column:span 4">参加者なし</div>'}</div>
+  </div>
+  <div class="card">
+    <div class="clabel">ペア固定</div>
+    <div class="mb8">${fph}</div>
+    <div class="row">
+      <select id="fp-a" style="flex:1">${opts}</select>
+      <span style="color:var(--g4);font-weight:700">✕</span>
+      <select id="fp-b" style="flex:1">${opts}</select>
+      <button class="btn btn-black btn-sm" onclick="addFP()">固定</button>
+    </div>
+  </div>`;
+}
+
+// Stats section state
+let statsSection='ranking';
+
+// Build stats object split by game type
+function buildStats(type){
+  // type: 'all' | 'doubles' | 'singles'
+  const st={};
+  S.members.forEach(m=>{st[m.id]={name:m.name,g:0,w:0,d:0,l:0,pts:0,dPts:0,sPts:0};});
+  S.games.forEach(g=>{
+    if(type!=='all'&&g.type!==type)return;
+    [...g.teamA,...g.teamB].forEach(id=>{
+      if(!st[id])return;st[id].g++;
+      const inA=g.teamA.includes(id);
+      const won=(g.result==='A'&&inA)||(g.result==='B'&&!inA);
+      const drew=g.result==='D';
+      const pt=drew?S.ptDraw:won?S.ptWin:S.ptLoss;
+      if(drew)st[id].d++;
+      else if(won)st[id].w++;
+      else st[id].l++;
+      st[id].pts+=pt;
+      if(g.type==='doubles')st[id].dPts+=pt;
+      else st[id].sPts+=pt;
+    });
+  });
+  return st;
+}
+
+// ═══════════════════════
+//  TAB: STATS
+// ═══════════════════════
+let rankingSubSection='all';
+let personalSubSection='doubles';
+
+function renderStats(){
+  const sections=[
+    {id:'ranking',label:'ランキング'},
+    {id:'personal',label:'個人成績'},
+    {id:'pair',label:'ペア成績'},
+    {id:'history',label:'試合履歴'},
+    {id:'ptsettings',label:'Pt設定'},
+  ];
+  const pills=sections.map(s=>{
+    const active=statsSection===s.id;
+    return`<button onclick="statsSection='${s.id}';renderTab()" style="padding:6px 14px;border-radius:20px;border:1.5px solid ${active?'var(--ora)':'var(--g5)'};background:${active?'var(--ora)':'var(--white)'};color:${active?'var(--white)':'var(--g3)'};font-family:var(--f);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">${s.label}</button>`;
+  }).join('');
+  const nav=`<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">${pills}</div>`;
+
+  // Sub-pill helper
+  const subPill=(items,current,setter)=>`<div style="display:flex;gap:5px;margin-bottom:10px">${
+    items.map(({id,label})=>{
+      const a=current===id;
+      return`<button onclick="${setter}='${id}';renderTab()" style="padding:4px 12px;border-radius:16px;border:1.5px solid ${a?'var(--black)':'var(--g5)'};background:${a?'var(--black)':'var(--white)'};color:${a?'var(--white)':'var(--g3)'};font-family:var(--f);font-size:12px;font-weight:600;cursor:pointer">${label}</button>`;
+    }).join('')
+  }</div>`;
+
+  let content='';
+
+  if(statsSection==='ranking'){
+    const subItems=[{id:'all',label:'総合'},{id:'doubles',label:'ダブルス'},{id:'singles',label:'シングルス'}];
+    const sub=subPill(subItems,rankingSubSection,'rankingSubSection');
+    const ptKey=rankingSubSection==='all'?'pts':rankingSubSection==='doubles'?'dPts':'sPts';
+    const st=buildStats(rankingSubSection==='all'?'all':rankingSubSection);
+    const rows=Object.values(st).filter(s=>s.g>0)
+      .sort((a,b)=>b[ptKey]-a[ptKey]||(b.g?b.w/b.g:0)-(a.g?a.w/a.g:0));
+    const rkHtml=rows.length
+      ?rows.map((s,i)=>{
+          const cls=i===0?'r1':i===1?'r2':i===2?'r3':'';
+          const wr=Math.round(s.w/s.g*100);
+          return`<div class="rrow"><div class="rnum ${cls}">${i+1}</div>
+            <div class="rinfo"><div class="rname">${s.name}</div><div class="rsub">${s.g}試合 ${s.w}勝${s.d}分${s.l}敗 / ${wr}%</div></div>
+            <div class="rpts">${s[ptKey]}pt</div></div>`;
+        }).join('')
+      :'<div class="sm">まだデータなし</div>';
+    content=`<div class="card">${sub}${rkHtml}</div>`;
+  }
+  else if(statsSection==='personal'){
+    const subItems=[{id:'doubles',label:'ダブルス'},{id:'singles',label:'シングルス'}];
+    const sub=subPill(subItems,personalSubSection,'personalSubSection');
+    const st=buildStats(personalSubSection);
+    const ptKey=personalSubSection==='doubles'?'dPts':'sPts';
+    const rows=Object.values(st).filter(s=>s.g>0).sort((a,b)=>b[ptKey]-a[ptKey]);
+    const tbody=rows.map(s=>{
+      const wr=Math.round(s.w/s.g*100);
+      return`<tr><td><strong>${s.name}</strong></td><td>${s.g}</td><td>${s.w}</td><td>${s.l}</td>
+        <td><div style="font-size:11px">${wr}%</div><div class="wbar"><div class="wfill" style="width:${wr}%"></div></div></td>
+        <td><strong style="color:var(--ora)">${s[ptKey]}</strong></td></tr>`;
+    }).join('')||'<tr><td colspan="6" style="text-align:center;padding:14px;color:var(--g4)">データなし</td></tr>';
+    content=`<div class="card">${sub}<div style="overflow-x:auto"><table class="stbl">
+      <thead><tr><th>名前</th><th>試合</th><th>勝</th><th>負</th><th>勝率</th><th>pt</th></tr></thead>
+      <tbody>${tbody}</tbody></table></div></div>`;
+  }
+  else if(statsSection==='pair'){
+    const ps={};
+    S.games.filter(g=>g.type==='doubles').forEach(g=>{
+      const proc=(tm,won)=>{if(tm.length<2)return;const k=pk(tm);if(!ps[k])ps[k]={ids:tm,g:0,w:0};ps[k].g++;if(won)ps[k].w++;};
+      proc(g.teamA,g.result==='A');proc(g.teamB,g.result==='B');
+    });
+    const parr=Object.values(ps).sort((a,b)=>b.g-a.g);
+    content=parr.length
+      ?`<div class="pgrid">${parr.map(p=>{
+          const n=p.ids.map(id=>gm(id)?.name||'?').join(' & ');
+          const wr=Math.round(p.w/p.g*100);
+          return`<div class="pcard"><div class="pname2">${n}</div><div class="sm">${p.g}試合/${p.w}勝/${wr}%</div><div class="wbar mt4"><div class="wfill" style="width:${wr}%"></div></div></div>`;
+        }).join('')}</div>`
+      :'<div class="sm">まだデータなし</div>';
+  }
+  else if(statsSection==='history'){
+    content=S.games.length
+      ?`<div class="card">`+[...S.games].sort((a,b)=>(a.gameNum||0)-(b.gameNum||0)).map(g=>{
+          const nA=g.teamA.map(id=>gm(id)?.name||'?').join('&');
+          const nB=g.teamB.map(id=>gm(id)?.name||'?').join('&');
+          const res=g.result==='A'?`${nA}勝`:g.result==='B'?`${nB}勝`:'引分';
+          const sc=(g.scoreA!==null&&g.scoreB!==null)?` ${g.scoreA}–${g.scoreB}`:'';
+          return`<div style="padding:8px 0;border-bottom:1px solid var(--g6);font-size:12px">G${g.gameNum||''} ${g.time||''} | ${g.type==='singles'?'シングルス':'ダブルス'} | ${nA} vs ${nB} → ${res}${sc}</div>`;
+        }).join('')+`</div>`
+      :'<div class="sm">まだ試合なし</div>';
+  }
+  else if(statsSection==='ptsettings'){
+    const ptRow=(label,key)=>{
+      const val=S[key];
+      return`<div class="togrow">
+        <div><div class="toglbl">${label}</div></div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="score-btn" style="border:1px solid var(--g5);border-radius:6px;padding:4px 10px" onclick="adjPt('${key}',-1)">−</button>
+          <span style="font-size:16px;font-weight:700;min-width:24px;text-align:center">${val}</span>
+          <button class="score-btn" style="border:1px solid var(--g5);border-radius:6px;padding:4px 10px" onclick="adjPt('${key}',1)">+</button>
+        </div>
+      </div>`;
+    };
+    content=`<div class="card">
+      <div class="clabel">ポイント計算設定</div>
+      <div class="sm mb8">勝ち・引き分け・負け各々に付与されるポイントを設定できます</div>
+      ${ptRow('勝ち','ptWin')}
+      ${ptRow('引き分け','ptDraw')}
+      ${ptRow('負け','ptLoss')}
+    </div>`;
+  }
+  return nav+content;
+}
+
+function adjPt(key,delta){
+  S[key]=Math.max(0,Math.min(10,(S[key]||0)+delta));
+  save();renderTab();
+}
+
+function renderSettings(){
+  const total=S.totalCourts,sc=S.singlesCourts,dc=S.doublesCourts;
+  const tbtns=[1,2,3,4,5,6].map(n=>`<button class="nbtn ${total===n?'on':''}" onclick="setTCig(${n})">${n}</button>`).join('');
+  const scbtns=[...Array(total+1).keys()].map(n=>`<button class="nbtn ${sc===n?'on':''}" onclick="setSCig(${n})">${n}</button>`).join('');
+  const aArr=getActive();
+  return`<div class="card">
+    <div class="clabel">コート数（合計）</div><div class="numrow mb8">${tbtns}</div>
+    <div class="clabel">シングルスコート数</div><div class="numrow">${scbtns}</div>
+    <div class="sm mt8">ダブルス ${dc}面 / シングルス ${sc}面 / 参加 ${aArr.length}人</div>
+  </div>
+  <div class="card">
+    <div class="clabel">ランダム化オプション</div>
+    <div class="togrow">
+      <div><div class="toglbl">パワーバランスで組む</div><div class="togsub">組み方を選択</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;padding:6px 0 10px">
+      ${[
+        {v:'balance', label:'バランス重視', sub:'強い人と弱い人を同じペアに'},
+        {v:'strong',  label:'上位・下位グループ分け', sub:'★4-5同士、★1-3同士でグループを分けて均等に組む'},
+        {v:'same',    label:'対戦パワーを均等に', sub:'対戦相手同士の合計パワーが同じになるよう組む'},
+        {v:'strict',  label:'完全同レベル', sub:'同じ★の4人だけで1コートを組む（異なる★は混在しない）'},
+        {v:'off',     label:'パワー考慮なし', sub:'ランダムのみ'},
+      ].map(o=>{
+        const sel=S.powerMode===o.v;
+        return`<div onclick="S.powerMode='${o.v}';save();renderTab()" style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1.5px solid ${sel?'var(--ora)':'var(--g5)'};background:${sel?'var(--ora2)':'var(--white)'};cursor:pointer">
+          <div style="width:16px;height:16px;border-radius:50%;border:2px solid ${sel?'var(--ora)':'var(--g5)'};background:${sel?'var(--ora)':'var(--white)'};flex-shrink:0;display:flex;align-items:center;justify-content:center">
+            ${sel?'<div style="width:7px;height:7px;border-radius:50%;background:var(--white)"></div>':''}
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:${sel?700:500};color:${sel?'var(--ora3)':'var(--black)'}">${o.label}</div>
+            <div style="font-size:11px;color:var(--g4)">${o.sub}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <button class="btn btn-ora btn-full" style="margin-bottom:10px" onclick="reshuffleAll();goTab('game')">このルールで全シャッフル</button>
+    <div class="togrow"><div><div class="toglbl">同じペアを避ける</div><div class="togsub">直近15試合を参照（パワーなしモード時のみ有効）</div></div><input type="checkbox" ${S.optRepeat?'checked':''} onchange="S.optRepeat=this.checked;save()"></div>
+  </div>
+  <div class="card">
+    <div class="clabel">データ</div>
+    <button class="btn btn-outline btn-full" onclick="openModal()">本日の結果を表示</button>
+  </div>
+  <div class="card" style="text-align:center">
+    <div class="clabel" style="text-align:center">サポート窓口</div>
+    <a href="mailto:revlis9.708@gmail.com" style="display:block;margin-top:8px;font-size:12px;color:var(--ora);text-decoration:none">
+      revlis9.708@gmail.com
+    </a>
+  </div>
+  <div class="card">
+    <div class="clabel">スコアボード連携</div>
+    <div class="sm" style="margin-bottom:10px;line-height:1.7">コートに置いたスマホをスコアボードにできます。連携するとゲームの対戦カードが自動でスコアボードに表示され、スコアが自動で入力されます。</div>
+    <button class="btn btn-ora btn-full" onclick="openScoreLink()">連携コードを表示</button>
+  </div>`;
+}
+
+// ═══════════════════════
+//  SCOREBOARD LINK (A side)
+// ═══════════════════════
+let scoreSessionId=localStorage.getItem('_score_session')||null;
+let scoreSessionCode=localStorage.getItem('_score_code')||null;
+let scorePollTimer=null;
+
+async function openScoreLink(){
+  // Create or reuse today's session
+  if(!scoreSessionId){
+    const code=String(Math.floor(100+Math.random()*900)); // 100-999
+    const{data,error}=await sb.from('score_sessions').insert({
+      code,owner_line_id:localStorage.getItem('_line_id')||null
+    }).select().single();
+    if(error){showToast('連携セッションの作成に失敗しました');return;}
+    scoreSessionId=data.id;
+    scoreSessionCode=code;
+    localStorage.setItem('_score_session',scoreSessionId);
+    localStorage.setItem('_score_code',code);
+  }
+
+  const scoreUrl='https://revlis9708-sketch.github.io/badminton-vs-app/score.html';
+  const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(scoreUrl)}`;
+
+  document.getElementById('modal-inner').innerHTML=`
+    <span class="mclose" onclick="closeModal()">×</span>
+    <div class="mtitle">スコアボード連携</div>
+    <div style="text-align:center;padding:8px 0">
+      <div style="font-size:12px;color:var(--g4);margin-bottom:8px">コートのスマホでQRを読み取り</div>
+      <img src="${qrUrl}" style="width:160px;height:160px;border-radius:12px;border:1px solid var(--g6)">
+      <div style="font-size:11px;color:var(--g4);margin:10px 0 4px">または以下のURLを開く</div>
+      <div style="font-size:11px;font-family:monospace;background:var(--g7);padding:8px;border-radius:8px;word-break:break-all">${scoreUrl}</div>
+      <div style="font-size:12px;color:var(--g4);margin:16px 0 6px">今日の連携コード</div>
+      <div style="font-size:48px;font-weight:900;letter-spacing:12px;color:var(--ora)">${scoreSessionCode}</div>
+      <div style="font-size:11px;color:var(--g4);margin-top:12px;line-height:1.7">スコアボード側でこのコードとコート番号を<br>入力すると連携が完了します</div>
+    </div>
+    <button class="btn btn-outline btn-full" style="margin-top:8px" onclick="resetScoreSession()">新しいコードを発行</button>`;
+  document.getElementById('overlay').classList.add('show');
+
+  startScoreSync();
+}
+
+async function resetScoreSession(){
+  scoreSessionId=null;scoreSessionCode=null;
+  localStorage.removeItem('_score_session');
+  localStorage.removeItem('_score_code');
+  closeModal();
+  openScoreLink();
+}
+
+// Push current games to score_courts (A → B)
+async function pushGamesToScoreboard(){
+  if(!scoreSessionId)return;
+  for(let ci=0;ci<S.courts.length;ci++){
+    const ct=S.courts[ci];
+    const g=ct.games.find(g=>!g.confirmed&&(g.teamA.length||g.teamB.length));
+    const{data:row}=await sb.from('score_courts')
+      .select('*').eq('session_id',scoreSessionId).eq('court_index',ci).single();
+    if(!row)continue; // no scoreboard linked to this court
+    if(g&&g.result===null){
+      const aN=g.teamA.map(id=>gm(id)?.name||'?').join('/');
+      const bN=g.teamB.map(id=>gm(id)?.name||'?').join('/');
+      // Update if: different game, waiting status, OR member names changed (shuffle)
+      const changed=row.game_id!==g.id||row.status==='waiting'||
+        row.team_a_names!==aN||row.team_b_names!==bN;
+      // Don't overwrite while B is actively playing this game
+      if(changed&&row.status!=='playing'){
+        await sb.from('score_courts').update({
+          game_id:g.id,game_num:g.gameNum,court_type:g.courtType||ct.type,
+          team_a_names:aN,team_b_names:bN,
+          status:'assigned',score_a:null,score_b:null,
+          swapped_team_a:null,swapped_team_b:null,
+          updated_at:new Date().toISOString()
+        }).eq('id',row.id);
+      }
+    } else if(!g&&row.game_id&&row.status==='assigned'){
+      // Game gone (cleared) → clear B
+      await sb.from('score_courts').update({
+        game_id:null,game_num:null,team_a_names:null,team_b_names:null,
+        status:'waiting',updated_at:new Date().toISOString()
+      }).eq('id',row.id);
+    }
+  }
+}
+
+// Poll for finished scores (B → A)
+function startScoreSync(){
+  if(scorePollTimer)return;
+  scorePollTimer=setInterval(scoreSync,1500);
+}
+
+async function scoreSync(){
+  if(!scoreSessionId)return;
+  // Push games first
+  await pushGamesToScoreboard();
+
+  // Read swaps in real-time (any status) — Fix 2
+  const{data:allRows}=await sb.from('score_courts')
+    .select('*').eq('session_id',scoreSessionId);
+  if(!allRows)return;
+
+  let changed=false;
+
+  for(const row of allRows){
+    const ci=row.court_index;
+    if(ci>=S.courts.length)continue;
+    const ct=S.courts[ci];
+
+    // Real-time swap application (while assigned or playing)
+    if(row.swapped_team_a&&row.swapped_team_b&&row.status!=='done'){
+      const g=ct.games.find(g=>g.id===row.game_id&&!g.confirmed);
+      if(g&&g.teamA.length===2){
+        const nameToId={};
+        [...g.teamA,...g.teamB].forEach(id=>{const m=gm(id);if(m)nameToId[m.name]=id;});
+        const newA=row.swapped_team_a.split('/').map(n=>nameToId[n]).filter(Boolean);
+        const newB=row.swapped_team_b.split('/').map(n=>nameToId[n]).filter(Boolean);
+        const curA=g.teamA.join(',');
+        if(newA.length===2&&newB.length===2&&newA.join(',')!==curA){
+          g.teamA=newA;g.teamB=newB;changed=true;
+          // Acknowledge: sync team names so push doesn't overwrite B
+          await sb.from('score_courts').update({
+            team_a_names:row.swapped_team_a,team_b_names:row.swapped_team_b,
+            swapped_team_a:null,swapped_team_b:null,
+            updated_at:new Date().toISOString()
+          }).eq('id',row.id);
+        }
+      }
+    }
+
+    // Finished game → apply score
+    if(row.status==='done'){
+      const g=ct.games.find(g=>g.id===row.game_id&&!g.confirmed);
+      if(!g)continue;
+
+      if(row.swapped_team_a&&row.swapped_team_b&&g.teamA.length===2){
+        const nameToId={};
+        [...g.teamA,...g.teamB].forEach(id=>{const m=gm(id);if(m)nameToId[m.name]=id;});
+        const newA=row.swapped_team_a.split('/').map(n=>nameToId[n]).filter(Boolean);
+        const newB=row.swapped_team_b.split('/').map(n=>nameToId[n]).filter(Boolean);
+        if(newA.length===2&&newB.length===2){g.teamA=newA;g.teamB=newB;}
+      }
+
+      g.scoreA=row.score_a;
+      g.scoreB=row.score_b;
+      g.result=row.score_a>row.score_b?'A':row.score_b>row.score_a?'B':'D';
+      changed=true;
+
+      await sb.from('score_courts').update({
+        status:'waiting',game_id:null,game_num:null,
+        team_a_names:null,team_b_names:null,
+        swapped_team_a:null,swapped_team_b:null,
+        updated_at:new Date().toISOString()
+      }).eq('id',row.id);
+
+      showToast(`✓ ${String.fromCharCode(65+ci)}コートのスコアを受信しました`);
+    }
+  }
+  if(changed){save();renderTab();}
+}
+
+// Start sync automatically if session exists
+if(scoreSessionId)startScoreSync();
+
+// ═══════════════════════
+//  GAME ACTIONS
+// ═══════════════════════
+function getGameObj(gameId,ci){
+  return S.courts[ci]?.games.find(g=>g.id===gameId);
+}
+
+function setRes(gameId,ci,r){
+  const g=getGameObj(gameId,ci);
+  if(!g||g.confirmed)return;
+  // If scores are both set, result is locked to score-based value — ignore manual tap
+  if(g.scoreA!==null&&g.scoreB!==null)return;
+  g.result=g.result===r?null:r;
+  save();renderTab();
+}
+
+function adjScore(gameId,ci,tm,delta){
+  const g=getGameObj(gameId,ci);if(!g||g.confirmed)return;
+  if(tm==='a'){
+    if(g.scoreA===null){g.scoreA=15;} // first tap always shows 15
+    else{g.scoreA=Math.max(0,Math.min(99,g.scoreA+delta));}
+  } else {
+    if(g.scoreB===null){g.scoreB=15;}
+    else{g.scoreB=Math.max(0,Math.min(99,g.scoreB+delta));}
+  }
+  // Auto-determine result from scores when BOTH are set (Fix 6+7)
+  if(g.scoreA!==null&&g.scoreB!==null){
+    if(g.scoreA>g.scoreB)g.result='A';
+    else if(g.scoreB>g.scoreA)g.result='B';
+    else g.result='D';
+  }else{
+    g.result=null; // one score missing — clear result
+  }
+  // Update DOM score display
+  const key=tm==='a'?g.scoreA:g.scoreB;
+  const el=document.getElementById(`sv-${gameId}-${tm}`);
+  if(el){el.textContent=key;el.classList.remove('empty');}
+  save();
+  // Re-render to update matchup highlighting
+  renderTab();
+}
+
+function confGame(gameId,ci,auto){
+  const g=getGameObj(gameId,ci);
+  if(!g||!g.result)return;
+  g.confirmed=true;
+  // Assign gameNum at confirmation time (not at shuffle time) so numbers never skip
+  const confirmedNum=S.games.length+1;
+  const now=new Date();
+  S.games.push({
+    id:g.id,gameNum:confirmedNum,
+    date:now.toLocaleDateString('ja-JP'),
+    time:now.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}),
+    type:S.courts[ci].type,
+    teamA:[...g.teamA],teamB:[...g.teamB],
+    result:g.result,scoreA:g.scoreA,scoreB:g.scoreB,
+  });
+  save();renderTab();
+}
+
+function nextGameForCourt(ci){
+  // auto-confirm the current result if not yet confirmed
+  const ct=S.courts[ci];
+  if(ct){
+    const cur=ct.games.find(g=>!g.confirmed&&g.result);
+    if(cur) confGame(cur.id,ci,true);
+  }
+  addGameToCourt(ci);save();renderTab();
+  setTimeout(()=>{
+    const body=document.getElementById('tab-body');
+    if(body) body.scrollTop=body.scrollHeight;
+  },50);
+}
+
+function reshuffleCourt(ci){
+  const ct=S.courts[ci];if(!ct)return;
+  const idx=ct.games.findIndex(g=>!g.confirmed);
+  if(idx<0)return;
+  const old=ct.games[idx];
+
+  // Clear this court's active game so its members are free
+  ct.games[idx]={...old,teamA:[],teamB:[],result:null,scoreA:null,scoreB:null};
+
+  // Build pool: all active members NOT in any other court's active (result=null, non-empty) game
+  const otherInPlay=new Set();
+  S.courts.forEach((c2,ci2)=>{
+    if(ci2===ci)return; // skip self — already cleared
+    c2.games.forEach(g=>{
+      if(!g.confirmed&&g.result===null&&(g.teamA.length||g.teamB.length)){
+        g.teamA.forEach(id=>otherInPlay.add(id));
+        g.teamB.forEach(id=>otherInPlay.add(id));
+      }
+    });
+  });
+
+  const gameCnt={};
+  S.games.forEach(g=>{[...g.teamA,...g.teamB].forEach(id=>{gameCnt[id]=(gameCnt[id]||0)+1;});});
+  const fairSort=(arr)=>{
+    const groups={};
+    arr.forEach(m=>{const c=gameCnt[m.id]||0;if(!groups[c])groups[c]=[];groups[c].push(m);});
+    return Object.keys(groups).sort((a,b)=>Number(a)-Number(b)).flatMap(k=>shuf(groups[k]));
+  };
+
+  // Full pool = all active members not in another court's ongoing game
+  const pool=fairSort(getActive().filter(m=>!otherInPlay.has(m.id)));
+
+  let teamA=[],teamB=[];
+  if(ct.type==='singles'){
+    const sPool=pool.filter(m=>S.singlesIds.has(m.id));
+    if(sPool.length>=2){teamA=[sPool[0].id];teamB=[sPool[1].id];}
+  } else if(pool.length>=4){
+    let p1,p2,p3,p4;
+    if(S.powerMode==='strict'){
+      const levelGroups=[5,4,3,2,1].map(lv=>{
+        const g=pool.filter(m=>m.power===lv);
+        if(g.length<4)return null;
+        return{g,avgCnt:g.reduce((s,m)=>s+(gameCnt[m.id]||0),0)/g.length};
+      }).filter(Boolean).sort((a,b)=>a.avgCnt-b.avgCnt);
+      if(levelGroups.length){const pick=shuf(levelGroups[0].g.slice(0,4));[p1,p2,p3,p4]=pick;}
+    } else if(S.powerMode==='strong'){
+      const upper=pool.filter(m=>m.power>=4),lower=pool.filter(m=>m.power<=3);
+      const avg=arr=>arr.reduce((s,m)=>s+(gameCnt[m.id]||0),0)/arr.length;
+      const src=(upper.length>=4&&lower.length>=4)?(avg(upper)<=avg(lower)?upper:lower):upper.length>=4?upper:lower.length>=4?lower:null;
+      if(src&&src.length>=4){
+        const cands=src.slice(0,Math.min(8,src.length));
+        let best=cands.slice(0,4),bd=Infinity;
+        for(let t=0;t<50;t++){const c=shuf(cands).slice(0,4);const d=Math.abs((c[0].power+c[1].power)-(c[2].power+c[3].power));if(d<bd){bd=d;best=c;}}
+        [p1,p2,p3,p4]=best;
+      }
+    } else if(S.powerMode==='same'){
+      const cands=pool.slice(0,Math.min(8,pool.length));
+      let best=cands.slice(0,4),bd=Infinity;
+      for(let t=0;t<100;t++){const c=shuf(cands).slice(0,4);const d=Math.abs((c[0].power+c[1].power)-(c[2].power+c[3].power));if(d<bd){bd=d;best=c;}}
+      [p1,p2,p3,p4]=best;
+    } else if(S.powerMode==='balance'){
+      const strong=pool.filter(m=>m.power>=4),weak=pool.filter(m=>m.power<=2),mid=pool.filter(m=>m.power===3);
+      const filler=[...weak,...mid];
+      if(strong.length>=2&&filler.length>=2){p1=strong[0];p2=filler[0];p3=strong[1];p4=filler[1];}
+      else{[p1,p2,p3,p4]=pool.slice(0,4);}
+    } else {
+      // off mode: unpaired priority
+      const pairedSetC=new Set();const metSetC=new Set();
+      S.games.filter(g=>g.type==='doubles').forEach(g=>{for(let i=0;i<g.teamA.length;i++)for(let j=i+1;j<g.teamA.length;j++)pairedSetC.add([g.teamA[i],g.teamA[j]].sort().join('|'));for(let i=0;i<g.teamB.length;i++)for(let j=i+1;j<g.teamB.length;j++)pairedSetC.add([g.teamB[i],g.teamB[j]].sort().join('|'));});
+      S.games.forEach(g=>{g.teamA.forEach(a=>g.teamB.forEach(b=>metSetC.add([a,b].sort().join('|'))));});
+      const isPC=(a,b)=>pairedSetC.has([a.id,b.id].sort().join('|'));
+      const isMC=(a,b)=>metSetC.has([a.id,b.id].sort().join('|'));
+      let bsC=Infinity,baC=null;
+      const upC=[];
+      for(let i=0;i<pool.length;i++)for(let j=i+1;j<pool.length;j++)if(!isPC(pool[i],pool[j]))upC.push([pool[i],pool[j]]);
+      if(upC.length>=2){for(let i=0;i<Math.min(upC.length,80);i++)for(let j=i+1;j<Math.min(upC.length,80);j++){const [a,b]=upC[i],[c,d]=upC[j];if(new Set([a.id,b.id,c.id,d.id]).size<4)continue;const mp=(isMC(a,c)?1:0)+(isMC(a,d)?1:0)+(isMC(b,c)?1:0)+(isMC(b,d)?1:0);if(mp<bsC){bsC=mp;baC=[a,b,c,d];}}}
+      if(!baC&&upC.length>=1){for(const [a,b] of upC.slice(0,40)){const rest=pool.filter(m=>m.id!==a.id&&m.id!==b.id);for(let t=0;t<30;t++){const r=shuf(rest).slice(0,2);if(r.length<2)break;const [c,d]=r;const s=(isMC(a,c)?1:0)+(isMC(a,d)?1:0)+(isMC(b,c)?1:0)+(isMC(b,d)?1:0)+(isPC(c,d)?50:0);if(s<bsC){bsC=s;baC=[a,b,c,d];}}}}
+      if(!baC){const sp=pool.slice(0,8);for(let t=0;t<100;t++){const c=shuf(sp).slice(0,4);if(c.length<4)break;const s=(isMC(c[0],c[2])?1:0)+(isMC(c[0],c[3])?1:0)+(isMC(c[1],c[2])?1:0)+(isMC(c[1],c[3])?1:0);if(s<bsC){bsC=s;baC=[c[0],c[1],c[2],c[3]];}}}
+      if(baC){[p1,p2,p3,p4]=baC;}
+    }
+    if(p1&&p2&&p3&&p4){teamA=[p1.id,p2.id];teamB=[p3.id,p4.id];}
+  }
+
+  S.gameCounter++;
+  ct.games[idx]={...old,gameNum:S.gameCounter,courtType:ct.type,teamA,teamB,result:null,scoreA:null,scoreB:null,confirmed:false};
+  save();renderTab();
+}
+
+function clearCourt(ci){
+  const ct=S.courts[ci];if(!ct)return;
+  const idx=ct.games.findIndex(g=>!g.confirmed);
+  if(idx<0)return;
+  const old=ct.games[idx];
+  S.gameCounter++;
+  ct.games[idx]={...old,gameNum:S.gameCounter,courtType:ct.type,teamA:[],teamB:[],result:null,scoreA:null,scoreB:null,confirmed:false};
+  save();renderTab();
+}
+
+function reshuffleAll(){
+  // Step 1: clear ALL active (unconfirmed) games completely
+  S.courts.forEach(ct=>{
+    const idx=ct.games.findIndex(g=>!g.confirmed);
+    if(idx>=0){
+      const old=ct.games[idx];
+      ct.games[idx]={...old,teamA:[],teamB:[],result:null,scoreA:null,scoreB:null};
+    }
+  });
+
+  // Step 2: build pairings for ALL courts at once from the full pool
+  // Use a global allocation so each player only appears in one court
+  const assigned=new Set();
+
+  // game count for fairness
+  const gameCnt={};
+  S.games.forEach(g=>{[...g.teamA,...g.teamB].forEach(id=>{gameCnt[id]=(gameCnt[id]||0)+1;});});
+  const fairSort=(arr)=>{
+    const groups={};
+    arr.forEach(m=>{const c=gameCnt[m.id]||0;if(!groups[c])groups[c]=[];groups[c].push(m);});
+    return Object.keys(groups).sort((a,b)=>Number(a)-Number(b)).flatMap(k=>shuf(groups[k]));
+  };
+
+  const allAvail=fairSort(getActive());
+
+  S.courts.forEach((ct,ci)=>{
+    const idx=ct.games.findIndex(g=>!g.confirmed);
+    if(idx<0)return;
+    const old=ct.games[idx];
+
+    // Get players not yet assigned to another court this round
+    const pool=allAvail.filter(m=>!assigned.has(m.id));
+
+    let teamA=[],teamB=[];
+
+    if(ct.type==='singles'){
+      const sPool=pool.filter(m=>S.singlesIds.has(m.id));
+      if(sPool.length>=2){
+        teamA=[sPool[0].id];teamB=[sPool[1].id];
+        assigned.add(sPool[0].id);assigned.add(sPool[1].id);
+      }
+    } else if(ct.type==='doubles'&&pool.length>=4) {
+      // For off mode, delegate entirely to buildOnePairing which has the full logic
+      if(S.powerMode==='off'){
+        const pairing=buildOnePairing(ct.type,ci);
+        if(pairing.teamA.length&&pairing.teamB.length){
+          teamA=pairing.teamA;teamB=pairing.teamB;
+          [...teamA,...teamB].forEach(id=>assigned.add(id));
+        }
+      } else {
+      let p1,p2,p3,p4;
+        if(S.powerMode==='strict'){
+          const levels=[5,4,3,2,1];
+          const levelGroups=levels.map(lv=>{
+            const g=pool.filter(m=>m.power===lv);
+            if(g.length<4)return null;
+            const avgCnt=g.reduce((s,m)=>s+(gameCnt[m.id]||0),0)/g.length;
+            return{lv,g,avgCnt};
+          }).filter(Boolean).sort((a,b)=>a.avgCnt-b.avgCnt);
+          if(levelGroups.length){
+            const pick=shuf(levelGroups[0].g.slice(0,4));
+            [p1,p2,p3,p4]=pick;
+          }
+        } else if(S.powerMode==='strong'){
+          const upper=pool.filter(m=>m.power>=4);
+          const lower=pool.filter(m=>m.power<=3);
+          const avg=arr=>arr.length?arr.reduce((s,m)=>s+(gameCnt[m.id]||0),0)/arr.length:Infinity;
+          const src=(upper.length>=4&&lower.length>=4)?(avg(upper)<=avg(lower)?upper:lower):upper.length>=4?upper:lower.length>=4?lower:null;
+          if(src&&src.length>=4){
+            const cands=src.slice(0,Math.min(8,src.length));
+            let best=cands.slice(0,4),bd=Infinity;
+            for(let t=0;t<50;t++){const c=shuf(cands).slice(0,4);const d=Math.abs((c[0].power+c[1].power)-(c[2].power+c[3].power));if(d<bd){bd=d;best=c;}}
+            [p1,p2,p3,p4]=best;
+          }
+        } else if(S.powerMode==='same'){
+          const cands=pool.slice(0,Math.min(8,pool.length));
+          let best=cands.slice(0,4),bd=Infinity;
+          for(let t=0;t<100;t++){const c=shuf(cands).slice(0,4);const d=Math.abs((c[0].power+c[1].power)-(c[2].power+c[3].power));if(d<bd){bd=d;best=c;}}
+          [p1,p2,p3,p4]=best;
+        } else if(S.powerMode==='balance'){
+          const strong=pool.filter(m=>m.power>=4);
+          const weak=pool.filter(m=>m.power<=2);
+          const mid=pool.filter(m=>m.power===3);
+          const filler=[...weak,...mid];
+          if(strong.length>=2&&filler.length>=2){p1=strong[0];p2=filler[0];p3=strong[1];p4=filler[1];}
+          else{[p1,p2,p3,p4]=pool.slice(0,4);}
+        } else {
+          // 'off' mode: use full pool with unpaired priority
+          const pairedSetR=new Set();
+          const metSetR=new Set();
+          S.games.filter(g=>g.type==='doubles').forEach(g=>{
+            for(let i=0;i<g.teamA.length;i++)for(let j=i+1;j<g.teamA.length;j++)pairedSetR.add([g.teamA[i],g.teamA[j]].sort().join('|'));
+            for(let i=0;i<g.teamB.length;i++)for(let j=i+1;j<g.teamB.length;j++)pairedSetR.add([g.teamB[i],g.teamB[j]].sort().join('|'));
+          });
+          S.games.forEach(g=>{g.teamA.forEach(a=>g.teamB.forEach(b=>metSetR.add([a,b].sort().join('|'))));});
+          const isPR=(a,b)=>pairedSetR.has([a.id,b.id].sort().join('|'));
+          const isMR=(a,b)=>metSetR.has([a.id,b.id].sort().join('|'));
+          const fullPool=pool; // use all available players
+          let bsR=Infinity,baR=null;
+          const upR=[];
+          for(let i=0;i<fullPool.length;i++)for(let j=i+1;j<fullPool.length;j++)if(!isPR(fullPool[i],fullPool[j]))upR.push([fullPool[i],fullPool[j]]);
+          if(upR.length>=2){
+            for(let i=0;i<Math.min(upR.length,80);i++)for(let j=i+1;j<Math.min(upR.length,80);j++){
+              const [a,b]=upR[i],[c,d]=upR[j];
+              if(new Set([a.id,b.id,c.id,d.id]).size<4)continue;
+              const mp=(isMR(a,c)?1:0)+(isMR(a,d)?1:0)+(isMR(b,c)?1:0)+(isMR(b,d)?1:0);
+              if(mp<bsR){bsR=mp;baR=[a,b,c,d];}
+            }
+          }
+          if(!baR&&upR.length>=1){
+            for(const [a,b] of upR.slice(0,40)){
+              const rest=fullPool.filter(m=>m.id!==a.id&&m.id!==b.id);
+              for(let t=0;t<30;t++){
+                const r=shuf(rest).slice(0,2);if(r.length<2)break;
+                const [c,d]=r;
+                const s=(isMR(a,c)?1:0)+(isMR(a,d)?1:0)+(isMR(b,c)?1:0)+(isMR(b,d)?1:0)+(isPR(c,d)?50:0);
+                if(s<bsR){bsR=s;baR=[a,b,c,d];}
+              }
+            }
+          }
+          if(!baR){
+            const sp=fullPool.slice(0,8);
+            for(let t=0;t<100;t++){
+              const c=shuf(sp).slice(0,4);if(c.length<4)break;
+              const s=(isMR(c[0],c[2])?1:0)+(isMR(c[0],c[3])?1:0)+(isMR(c[1],c[2])?1:0)+(isMR(c[1],c[3])?1:0);
+              if(s<bsR){bsR=s;baR=[c[0],c[1],c[2],c[3]];}
+            }
+          }
+          if(baR){[p1,p2,p3,p4]=baR;}
+        }
+        if(p1&&p2&&p3&&p4){
+          teamA=[p1.id,p2.id];teamB=[p3.id,p4.id];
+          [p1,p2,p3,p4].forEach(m=>assigned.add(m.id));
+        }
+      } // end else (non-off modes)
+    } // end else doubles
+
+    S.gameCounter++;
+    ct.games[idx]={...old,gameNum:S.gameCounter,courtType:ct.type,teamA,teamB,result:null,scoreA:null,scoreB:null,confirmed:false};
+  });
+
+  save();renderTab();
+}
+
+function resetAll(){
+  // Use modal instead of confirm() — confirm() is blocked in WKWebView (iPad)
+  document.getElementById('modal-inner').innerHTML=`
+    <div class="mtitle">ゲームをリセット</div>
+    <div style="font-size:14px;line-height:1.7;color:var(--g3);margin-bottom:16px">
+      全ての試合記録・戦績がリセットされます。<br>
+      参加メンバーの選択はそのまま残ります。<br>
+      この操作は元に戻せません。
+    </div>
+    <button class="btn btn-ora btn-full" style="margin-bottom:8px" onclick="execReset()">リセットする</button>
+    <button class="btn btn-outline btn-full" onclick="closeModal()">キャンセル</button>`;
+  document.getElementById('overlay').classList.add('show');
+}
+
+function execReset(){
+  closeModal();
+  // Clear all game data and courts
+  S.courts=[];
+  S.gameCounter=0;
+  S.games=[];
+  // Clear chunked game storage keys
+  try{
+    for(let i=0;i<20;i++) localStorage.removeItem(`bd_g${i}`);
+    localStorage.removeItem('bd_gmeta');
+    localStorage.removeItem('bd_courts');
+  }catch(e){}
+  save();
+  showToast('リセットしました');
+  goSetup();
+}
+function selectWaiting(id){
+  // Toggle selection
+  selectedWaiting=selectedWaiting===id?null:id;
+  renderTab();
+}
+
+function placeInSlot(gameId,ci,team){
+  if(!selectedWaiting)return;
+  const g=getGameObj(gameId,ci);
+  if(!g||g.confirmed)return;
+  const ct=S.courts[ci];
+  const maxPerTeam=ct?.type==='singles'?1:2;
+  const memberId=selectedWaiting;
+  selectedWaiting=null;
+  if(team==='A'){
+    if(g.teamA.length>=maxPerTeam)return;
+    g.teamA=[...g.teamA,memberId];
+  }else{
+    if(g.teamB.length>=maxPerTeam)return;
+    g.teamB=[...g.teamB,memberId];
+  }
+  save();renderTab();
+}
+function selMain(){S.members.forEach(m=>S.activeIds.add(m.id));save();renderTab();}
+function clearMain(){S.activeIds.clear();save();renderTab();}
+function addFP(){
+  const a=document.getElementById('fp-a')?.value,b=document.getElementById('fp-b')?.value;
+  if(!a||!b||a===b)return;
+  // Check if either member is already in a fixed pair
+  const aInPair=S.fixedPairs.find(p=>p.a===a||p.b===a);
+  const bInPair=S.fixedPairs.find(p=>p.a===b||p.b===b);
+  if(aInPair){
+    const ma=gm(a),other=gm(aInPair.a===a?aInPair.b:aInPair.a);
+    showAlert(`${ma?.name} は<br>すでに ${other?.name} と固定済みです`);return;
+  }
+  if(bInPair){
+    const mb=gm(b),other=gm(bInPair.a===b?bInPair.b:bInPair.a);
+    showAlert(`${mb?.name} は<br>すでに ${other?.name} と固定済みです`);return;
+  }
+  if(!S.fixedPairs.find(p=>(p.a===a&&p.b===b)||(p.a===b&&p.b===a))){
+    S.fixedPairs.push({a,b});save();renderTab();
+  }
+}
+function remFP(i){S.fixedPairs.splice(i,1);save();renderTab();}
+function togSng(id){S.singlesIds.has(id)?S.singlesIds.delete(id):S.singlesIds.add(id);save();renderTab();}
+
+// ═══════════════════════
+// ═══════════════════════
+//  MODAL
+// ═══════════════════════
+function openModal(){
+  const date=new Date().toLocaleDateString('ja-JP');
+  let txt=`バドミントン 試合結果\n${date}\n\n`;
+
+  // Build stats
+  const st={};
+  S.members.forEach(m=>{st[m.id]={name:m.name,g:0,w:0,d:0,l:0,pts:0,dPts:0,sPts:0};});
+  S.games.forEach(g=>{
+    [...g.teamA,...g.teamB].forEach(id=>{
+      if(!st[id])return;st[id].g++;
+      const inA=g.teamA.includes(id);
+      const won=(g.result==='A'&&inA)||(g.result==='B'&&!inA);
+      const drew=g.result==='D';
+      const pt=drew?S.ptDraw:won?S.ptWin:S.ptLoss;
+      if(drew)st[id].d++;else if(won)st[id].w++;else st[id].l++;
+      st[id].pts+=pt;
+      if(g.type==='doubles')st[id].dPts+=pt;else st[id].sPts+=pt;
+    });
+  });
+
+  // Output based on current stats section/sub-section
+  if(statsSection==='ranking'){
+    const ptKey=rankingSubSection==='all'?'pts':rankingSubSection==='doubles'?'dPts':'sPts';
+    const label=rankingSubSection==='all'?'総合':rankingSubSection==='doubles'?'ダブルス':'シングルス';
+    const rows=Object.values(st).filter(s=>s.g>0).sort((a,b)=>b[ptKey]-a[ptKey]);
+    txt+=`【ランキング - ${label}】\n`;
+    rows.forEach((s,i)=>{
+      const wr=Math.round(s.w/s.g*100);
+      txt+=`${i+1}位 ${s.name} ${s[ptKey]}pt（${s.g}試合 ${s.w}勝${s.d}分${s.l}敗 ${wr}%）\n`;
+    });
+  }
+  else if(statsSection==='personal'){
+    const label=personalSubSection==='doubles'?'ダブルス':'シングルス';
+    const ptKey=personalSubSection==='doubles'?'dPts':'sPts';
+    const rows=Object.values(st).filter(s=>s.g>0).sort((a,b)=>b[ptKey]-a[ptKey]);
+    txt+=`【個人成績 - ${label}】\n`;
+    rows.forEach(s=>{
+      const wr=Math.round(s.w/s.g*100);
+      txt+=`${s.name} ${s[ptKey]}pt（${s.g}試合 ${s.w}勝${s.d}分${s.l}敗 ${wr}%）\n`;
+    });
+  }
+  else if(statsSection==='pair'){
+    const ps={};
+    S.games.filter(g=>g.type==='doubles').forEach(g=>{
+      const proc=(tm,won)=>{if(tm.length<2)return;const k=pk(tm);if(!ps[k])ps[k]={ids:tm,g:0,w:0};ps[k].g++;if(won)ps[k].w++;};
+      proc(g.teamA,g.result==='A');proc(g.teamB,g.result==='B');
+    });
+    txt+=`【ペア成績】\n`;
+    Object.values(ps).sort((a,b)=>b.g-a.g).forEach(p=>{
+      const n=p.ids.map(id=>gm(id)?.name||'?').join(' & ');
+      const wr=Math.round(p.w/p.g*100);
+      txt+=`${n} ${p.g}試合/${p.w}勝/${wr}%\n`;
+    });
+  }
+  else if(statsSection==='history'){
+    txt+=`【試合履歴】\n`;
+    [...S.games].sort((a,b)=>(a.gameNum||0)-(b.gameNum||0)).forEach(g=>{
+      const nA=g.teamA.map(id=>gm(id)?.name||'?').join('&');
+      const nB=g.teamB.map(id=>gm(id)?.name||'?').join('&');
+      const res=g.result==='A'?`${nA}勝`:g.result==='B'?`${nB}勝`:'引分';
+      const sc=(g.scoreA!==null&&g.scoreB!==null)?` (${g.scoreA}–${g.scoreB})`:'';
+      txt+=`G${g.gameNum||''} ${g.type==='singles'?'S':'D'} ${nA} vs ${nB} → ${res}${sc}\n`;
+    });
+  }
+  else{
+    // Default: all sections
+    const rkRows=Object.values(st).filter(s=>s.g>0).sort((a,b)=>b.pts-a.pts);
+    txt+=`【ランキング】\n`;
+    rkRows.forEach((s,i)=>{txt+=`${i+1}位 ${s.name} ${s.pts}pt\n`;});
+    txt+=`\n【試合履歴】\n`;
+    [...S.games].sort((a,b)=>(a.gameNum||0)-(b.gameNum||0)).forEach(g=>{
+      const nA=g.teamA.map(id=>gm(id)?.name||'?').join('&');
+      const nB=g.teamB.map(id=>gm(id)?.name||'?').join('&');
+      const res=g.result==='A'?`${nA}勝`:g.result==='B'?`${nB}勝`:'引分';
+      const sc=(g.scoreA!==null&&g.scoreB!==null)?` (${g.scoreA}–${g.scoreB})`:'';
+      txt+=`G${g.gameNum||''} ${nA} vs ${nB} → ${res}${sc}\n`;
+    });
+  }
+
+  document.getElementById('modal-inner').innerHTML=`
+    <span class="mclose" onclick="closeModal()">×</span>
+    <div class="mtitle">結果出力</div>
+    <div id="export-txt" style="font-size:11px;white-space:pre-wrap;font-family:monospace;background:var(--g7);padding:11px;border-radius:8px;max-height:320px;overflow-y:auto;margin-bottom:12px">${txt||'まだ試合なし'}</div>
+    <button class="btn btn-outline btn-full" onclick="doCopy()">コピー</button>`;
+  document.getElementById('overlay').classList.add('show');
+}
+
+function doCopy(){
+  const el=document.getElementById('export-txt');
+  if(!el)return;
+  const txt=el.textContent;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>showToast('コピーしました！')).catch(()=>fallbackCopy(txt));
+  }else{fallbackCopy(txt);}
+}
+
+function fallbackCopy(txt){
+  const ta=document.createElement('textarea');
+  ta.value=txt;
+  ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+  document.body.appendChild(ta);
+  ta.focus();ta.select();
+  try{document.execCommand('copy');showToast('コピーしました！');}
+  catch(e){showToast('コピーに失敗しました');}
+  document.body.removeChild(ta);
+}
+function closeModal(){document.getElementById('overlay').classList.remove('show');}
+function overlayTap(e){if(e.target.id==='overlay')closeModal();}
+
+// ═══════════════════════
+//  SUPABASE + LINE AUTH
+// ═══════════════════════
+const SUPABASE_URL='https://frmbdsmhcdfglkbynteu.supabase.co';
+const SUPABASE_KEY='sb_publishable_5n4MzBgkg-B9-VUrLcjh8A_3JavCe8E';
+const LINE_CLIENT_ID='2009966324';
+const LINE_REDIRECT_URI='https://revlis9708-sketch.github.io/badminton-vs-app/callback.html';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+function showAuthScreen(id){
+  document.querySelectorAll('.auth-screen,.screen').forEach(s=>s.classList.remove('show'));
+  document.getElementById(id).classList.add('show');
+}
+
+function showApp(){
+  document.querySelectorAll('.auth-screen').forEach(s=>s.classList.remove('show'));
+  load();
+  // Restore previous tab if game was in progress
+  if(S.courts.length>0){
+    showOnly('sc-main');
+    goTab('game');
+  } else {
+    renderSetup();
+    document.getElementById('sc-setup').classList.add('show');
+  }
+}
+
+// Generate random state for CSRF protection
+function genState(){
+  const s=Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2);
+  localStorage.setItem('line_state',s);  // localStorage persists across LINE browser
+  localStorage.setItem('line_state_ts',Date.now().toString());
+  return s;
+}
+
+// Start LINE Login flow
+function lineLogin(){
+  const state=genState();
+  const params=new URLSearchParams({
+    response_type:'code',
+    client_id:LINE_CLIENT_ID,
+    redirect_uri:LINE_REDIRECT_URI,
+    state,
+    scope:'profile openid',
+  });
+  // Force external browser on mobile to avoid LINE in-app browser issues
+  const url=`https://access.line.me/oauth2/v2.1/authorize?${params}`;
+  window.location.href=url;
+}
+
+// Exchange code for LINE profile via Supabase Edge Function
+async function handleLineCallback(code,state){
+  showAuthScreen('sc-auth-loading');
+  document.querySelector('#sc-auth-loading div:last-child').textContent='LINE認証中...';
+
+  // Verify state — allow 10 minutes window, skip if state missing (mobile LINE browser issue)
+  const savedState=localStorage.getItem('line_state');
+  const savedTs=parseInt(localStorage.getItem('line_state_ts')||'0');
+  const elapsed=Date.now()-savedTs;
+  if(savedState&&state!==savedState&&elapsed<600000){
+    showAuthScreen('sc-auth-login');
+    document.getElementById('login-err').textContent='認証エラーが発生しました。もう一度お試しください。';
+    return;
+  }
+  localStorage.removeItem('line_state');
+  localStorage.removeItem('line_state_ts');
+
+  try{
+    // Exchange code for token via Supabase Edge Function
+    const res=await fetch(`${SUPABASE_URL}/functions/v1/line-auth`,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':SUPABASE_KEY,
+        'Authorization':`Bearer ${SUPABASE_KEY}`,
+      },
+      body:JSON.stringify({code,redirect_uri:LINE_REDIRECT_URI}),
+    });
+    const data=await res.json();
+    if(!data.lineId){throw new Error('LINE認証に失敗しました');}
+
+    // Check if LINE ID already registered
+    const{data:profile}=await sb.from('profiles')
+      .select('*').eq('line_id',data.lineId).single();
+
+    if(profile){
+      // Already registered
+      if(profile.is_active===false){
+        showAuthScreen('sc-auth-login');
+        document.getElementById('login-err').textContent='このアカウントは無効化されています。';
+        return;
+      }
+      // Save session info locally
+      localStorage.setItem('_line_id',data.lineId);
+      localStorage.setItem('_line_name',data.displayName||'');
+      localStorage.setItem('_profile_id',profile.id);
+      showApp();
+    } else {
+      // New user: show registration form
+      localStorage.setItem('_line_id',data.lineId);
+      localStorage.setItem('_line_name',data.displayName||'');
+      document.getElementById('reg-line-name').textContent=data.displayName||'';
+      showAuthScreen('sc-auth-register');
+    }
+  }catch(e){
+    console.error(e);
+    showAuthScreen('sc-auth-login');
+    document.getElementById('login-err').textContent='認証に失敗しました。もう一度お試しください。';
+  }
+}
+
+async function authRegister(){
+  const name=document.getElementById('reg-name').value.trim();
+  const phone=document.getElementById('reg-phone').value.replace(/[-\s]/g,'').trim();
+  const errEl=document.getElementById('reg-err');
+  const lineId=localStorage.getItem('_line_id');
+  errEl.textContent='';
+
+  if(!name||!phone){errEl.textContent='すべての項目を入力してください';return;}
+  if(!lineId){errEl.textContent='LINE認証情報が見つかりません。最初からやり直してください。';return;}
+
+  const btn=event.target;btn.disabled=true;btn.textContent='照合中...';
+
+  // Check buyers table
+  const{data:buyer,error:buyerErr}=await sb.from('buyers')
+    .select('*').eq('phone',phone).eq('is_active',true).single();
+
+  if(buyerErr||!buyer){
+    btn.disabled=false;btn.textContent='登録する';
+    errEl.textContent='購入情報が確認できません。お名前・電話番号をご確認ください。';
+    return;
+  }
+
+  // Name check
+  if(buyer.name.replace(/\s/g,'')!==name.replace(/\s/g,'')){
+    btn.disabled=false;btn.textContent='登録する';
+    errEl.textContent='購入情報が確認できません。お名前・電話番号をご確認ください。';
+    return;
+  }
+
+  // Check if LINE ID already used by another account
+  const{data:existing}=await sb.from('profiles').select('id').eq('line_id',lineId).single();
+  if(existing){
+    btn.disabled=false;btn.textContent='登録する';
+    errEl.textContent='このLINEアカウントはすでに登録されています。';
+    return;
+  }
+
+  // Check if phone already registered
+  const{data:phoneExisting}=await sb.from('profiles').select('id').eq('phone',phone).single();
+  if(phoneExisting){
+    btn.disabled=false;btn.textContent='登録する';
+    errEl.textContent='この電話番号はすでに登録されています。';
+    return;
+  }
+
+  btn.textContent='登録中...';
+
+  // Create profile
+  const profId='prof_'+Date.now().toString(36);
+  const{error:profErr}=await sb.from('profiles').insert({
+    id:profId,
+    name,phone,
+    line_id:lineId,
+    is_active:true,
+    buyer_id:buyer.id,
+  });
+
+  if(profErr){
+    btn.disabled=false;btn.textContent='登録する';
+    errEl.textContent='登録に失敗しました。もう一度お試しください。';
+    return;
+  }
+
+  localStorage.setItem('_profile_id',profId);
+  btn.disabled=false;btn.textContent='登録する';
+  showToast('✓ 登録完了！');
+  setTimeout(()=>showApp(),500);
+}
+
+async function authLogout(){
+  localStorage.removeItem('_line_id');
+  localStorage.removeItem('_line_name');
+  localStorage.removeItem('_profile_id');
+  showAuthScreen('sc-auth-login');
+}
+
+// ═══════════════════════
+//  SERVICE WORKER
+// ═══════════════════════
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js')
+    .then(()=>console.log('SW registered'))
+    .catch(e=>console.warn('SW registration failed:',e));
+}
+
+// ═══════════════════════
+//  BOOT
+// ═══════════════════════
+(async()=>{
+  // Check for LINE callback stored by callback.html
+  const cbCode=localStorage.getItem('line_callback_code');
+  const cbState=localStorage.getItem('line_callback_state');
+  const cbTs=parseInt(localStorage.getItem('line_callback_ts')||'0');
+
+  if(cbCode&&cbState&&(Date.now()-cbTs)<60000){
+    // Clear callback data
+    localStorage.removeItem('line_callback_code');
+    localStorage.removeItem('line_callback_state');
+    localStorage.removeItem('line_callback_ts');
+    await handleLineCallback(cbCode,cbState);
+    return;
+  }
+
+  // Also check URL params (desktop fallback)
+  const params=new URLSearchParams(window.location.search);
+  const code=params.get('code');
+  const state=params.get('state');
+  if(code&&state){
+    window.history.replaceState({},'',window.location.pathname);
+    await handleLineCallback(code,state);
+    return;
+  }
+
+  // Check existing session
+  const lineId=localStorage.getItem('_line_id');
+  const profileId=localStorage.getItem('_profile_id');
+
+  if(lineId&&profileId){
+    const{data:profile}=await sb.from('profiles')
+      .select('is_active').eq('id',profileId).eq('line_id',lineId).single();
+    if(profile&&profile.is_active!==false){
+      showApp();
+      return;
+    }
+    localStorage.removeItem('_line_id');
+    localStorage.removeItem('_profile_id');
+  }
+
+  showAuthScreen('sc-auth-login');
+})();
+</script>
+</body>
+</html>
