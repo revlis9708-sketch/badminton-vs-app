@@ -1,0 +1,18 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # 3日ごとに実行（UTC 0:00 = 日本時間 9:00）
+    - cron: '0 0 */3 * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: sb_publishable_5n4MzBgkg-B9-VUrLcjh8A_3JavCe8E" \
+            "https://frmbdsmhcdfglkbynteu.supabase.co/rest/v1/buyers?select=id&limit=1"
+          echo "Supabase pinged successfully"
